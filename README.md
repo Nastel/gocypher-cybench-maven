@@ -8,12 +8,12 @@
     <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
     <version>1.0-SNAPSHOT</version>
     <executions>
-        <execution>
+		<execution>
 			<phase>test</phase>
 			<goals>
 				<goal>cybench</goal>
             </goals>
-         </execution>
+        </execution>
     </executions>
 	<configuration>
         <forks>1</forks>
