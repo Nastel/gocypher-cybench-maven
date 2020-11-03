@@ -8,7 +8,6 @@ public class LauncherConfiguration {
     @Parameter(property = "cybench.forks", defaultValue = "1")
     private int forks = 1;
 
-    /** The threads count for all benchmarks*/
     @Parameter(property = "cybench.threads", defaultValue = "1")
     private int threads = 1;
 
@@ -19,7 +18,6 @@ public class LauncherConfiguration {
     /** The warm-up iteration count for all benchmarks*/
     @Parameter(property = "cybench.warmUpIterations", defaultValue = "1")
     private int warmUpIterations = 3;
-
     /** The warm-up time for all benchmarks*/
     @Parameter(property = "cybench.warmUpSeconds", defaultValue = "5")
     private int warmUpSeconds = 5;
@@ -43,20 +41,20 @@ public class LauncherConfiguration {
     private String reportName = "CyBench Report";
 
     @Parameter(property = "cybench.customBenchmarkMetadata", defaultValue = "")
-    private String customBenchmarkMetadata = "";
+    private String userBenchmarkMetadata = "";
 
     @Parameter(property = "cybench.customProperties", defaultValue = "")
-    private String customProperties = "";
+    private String userProperties = "";
 
     @Parameter(property = "cybench.customProperties", defaultValue = "false")
     private boolean skip;
 
-    public String getCustomProperties() {
-        return customProperties;
+    public String getUserProperties() {
+        return userProperties;
     }
 
-    public void setCustomProperties(String customProperties) {
-        this.customProperties = customProperties;
+    public void setUserProperties(String userProperties) {
+        this.userProperties = userProperties;
     }
 
     public int getForks() {
@@ -64,7 +62,7 @@ public class LauncherConfiguration {
     }
 
     public void setForks(int forks) {
-        this.forks = forks;
+            this.forks = forks;
     }
 
     public int getThreads() {
@@ -147,12 +145,12 @@ public class LauncherConfiguration {
         this.reportName = reportName;
     }
 
-    public String getCustomBenchmarkMetadata() {
-        return customBenchmarkMetadata;
+    public String getUserBenchmarkMetadata() {
+        return userBenchmarkMetadata;
     }
 
-    public void setCustomBenchmarkMetadata(String customBenchmarkMetadata) {
-        this.customBenchmarkMetadata = customBenchmarkMetadata;
+    public void setUserBenchmarkMetadata(String userBenchmarkMetadata) {
+        this.userBenchmarkMetadata = userBenchmarkMetadata;
     }
 
     public boolean isSkip() {

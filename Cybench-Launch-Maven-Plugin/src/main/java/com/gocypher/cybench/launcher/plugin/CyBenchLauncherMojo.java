@@ -67,6 +67,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException {
         LauncherConfiguration configuration = new LauncherConfiguration();
+
         getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if(!configuration.isSkip() && System.getProperty("skipCybench") == null ) {
             long start = System.currentTimeMillis();
@@ -86,7 +87,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Map<String, Object> benchmarkSettings = new HashMap<>();
 
-                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseCustomBenchmarkMetadata(configuration.getCustomBenchmarkMetadata());
+                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseCustomBenchmarkMetadata(configuration.getUserBenchmarkMetadata());
 
                 this.checkAndConfigureCustomProperties(securityBuilder, benchmarkSettings, customBenchmarksMetadata);
 
@@ -119,7 +120,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.getEnvironmentSettings().put("environment", hwProperties);
                 report.getEnvironmentSettings().put("jvmEnvironment", jvmProperties);
                 report.getEnvironmentSettings().put("unclassifiedProperties", CollectSystemInformation.getUnclassifiedProperties());
-                report.getEnvironmentSettings().put("userDefinedProperties", customUserDefinedProperties(configuration.getCustomProperties()));
+                report.getEnvironmentSettings().put("userDefinedProperties", customUserDefinedProperties(configuration.getUserProperties()));
                 report.setBenchmarkSettings(benchmarkSettings);
 
                 //FIXME add all missing custom properties including public/private flag
