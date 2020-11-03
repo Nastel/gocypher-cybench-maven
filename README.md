@@ -16,7 +16,7 @@
         </execution>
     </executions>
 	<configuration>
-        <skip>false</skip>
+	<skip>false</skip>
         <forks>1</forks>
         <threads>1</threads>
         <measurementIterations>5</measurementIterations>
