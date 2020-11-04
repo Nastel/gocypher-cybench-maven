@@ -22,7 +22,6 @@ import com.gocypher.cybench.launcher.environment.model.HardwareProperties;
 import com.gocypher.cybench.launcher.environment.model.JVMProperties;
 import com.gocypher.cybench.launcher.environment.services.CollectSystemInformation;
 import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
-import com.gocypher.cybench.launcher.model.LauncherConfiguration;
 import com.gocypher.cybench.launcher.report.DeliveryService;
 import com.gocypher.cybench.launcher.report.ReportingService;
 import com.gocypher.cybench.launcher.utils.ComputationUtils;
@@ -58,6 +57,11 @@ import java.util.*;
 
 @Mojo( name = "cybench",requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.INTEGRATION_TEST)
 public class CyBenchLauncherMojo extends AbstractMojo {
+    @Parameter(property = "cybench.forks", defaultValue = "1")
+    private int forks = 1;
+
+    @Parameter(property = "cybench.threads", defaultValue = "1")
+    private int threads = 1;
 
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
@@ -65,11 +69,47 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.classpathScope", defaultValue = "runtime")
     protected String classpathScope;
 
-    public void execute() throws MojoExecutionException {
-        LauncherConfiguration configuration = new LauncherConfiguration();
+    @Parameter(property = "cybench.measurementIterations", defaultValue = "1")
+    private int measurementIterations = 1;
 
-        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
-        if(!configuration.isSkip() && System.getProperty("skipCybench") == null ) {
+    /** The warm-up iteration count for all benchmarks*/
+    @Parameter(property = "cybench.warmUpIterations", defaultValue = "1")
+    private int warmUpIterations = 1;
+    /** The warm-up time for all benchmarks*/
+    @Parameter(property = "cybench.warmUpSeconds", defaultValue = "5")
+    private int warmUpSeconds = 5;
+
+    @Parameter(property = "cybench.expectedScore", defaultValue = "-1.0")
+    private double expectedScore = -1.0d;
+
+    @Parameter(property = "cybench.shouldSendReportToCyBench", defaultValue = "false")
+    private boolean shouldSendReportToCyBench = false;
+
+    @Parameter(property = "cybench.shouldStoreReportToFileSystem", defaultValue = "true")
+    private boolean shouldStoreReportToFileSystem = true;
+
+    @Parameter(property = "cybench.reportUploadStatus", defaultValue = "public")
+    private String reportUploadStatus = "public";
+
+    @Parameter(property = "cybench.reportsFolder", defaultValue = "")
+    private String reportsFolder = "";
+
+    @Parameter(property = "cybench.reportName", defaultValue = "CyBench Report")
+    private String reportName = "CyBench Report";
+
+    @Parameter(property = "cybench.customBenchmarkMetadata", defaultValue = "")
+    private String userBenchmarkMetadata = "";
+
+    @Parameter(property = "cybench.customProperties", defaultValue = "")
+    private String userProperties = "";
+
+    @Parameter(property = "cybench.customProperties", defaultValue = "false")
+    private boolean skip;
+
+
+    public void execute() throws MojoExecutionException {
+//        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
+        if(!skip && System.getProperty("skipCybench") == null ) {
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
             getLog().info("                                 Starting CyBench benchmarks                             ");
@@ -87,21 +127,21 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Map<String, Object> benchmarkSettings = new HashMap<>();
 
-                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseCustomBenchmarkMetadata(configuration.getUserBenchmarkMetadata());
+                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseCustomBenchmarkMetadata(userBenchmarkMetadata);
 
                 this.checkAndConfigureCustomProperties(securityBuilder, benchmarkSettings, customBenchmarksMetadata);
 
-                benchmarkSettings.put("benchThreadCount", configuration.getThreads());
-                benchmarkSettings.put("benchReportName", configuration.getReportName());
+                benchmarkSettings.put("benchThreadCount", threads);
+                benchmarkSettings.put("benchReportName", reportName);
 
                 getLog().info("Executing benchmarks...");
 
                 OptionsBuilder optBuild = new OptionsBuilder();
-                Options opt = optBuild.forks(configuration.getForks())
-                        .measurementIterations(configuration.getMeasurementIterations())
-                        .warmupIterations(configuration.getWarmUpIterations())
-                        .warmupTime(TimeValue.seconds(configuration.getWarmUpSeconds()))
-                        .threads(configuration.getThreads())
+                Options opt = optBuild.forks(forks)
+                        .measurementIterations(measurementIterations)
+                        .warmupIterations(warmUpIterations)
+                        .warmupTime(TimeValue.seconds(warmUpIterations))
+                        .threads(threads)
                         .shouldDoGC(true)
                         .addProfiler(GCProfiler.class)
                         .addProfiler(HotspotThreadProfiler.class)
@@ -115,12 +155,12 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 Collection<RunResult> results = runner.run();
 
                 BenchmarkOverviewReport report = ReportingService.getInstance().createBenchmarkReport(results, customBenchmarksMetadata);
-                report.updateUploadStatus(configuration.getReportUploadStatus());
+                report.updateUploadStatus(reportUploadStatus);
 
                 report.getEnvironmentSettings().put("environment", hwProperties);
                 report.getEnvironmentSettings().put("jvmEnvironment", jvmProperties);
                 report.getEnvironmentSettings().put("unclassifiedProperties", CollectSystemInformation.getUnclassifiedProperties());
-                report.getEnvironmentSettings().put("userDefinedProperties", customUserDefinedProperties(configuration.getUserProperties()));
+                report.getEnvironmentSettings().put("userDefinedProperties", customUserDefinedProperties(userProperties));
                 report.setBenchmarkSettings(benchmarkSettings);
 
                 //FIXME add all missing custom properties including public/private flag
@@ -130,26 +170,26 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("-----------------------------------------------------------------------------------------");
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
                 getLog().info(reportJSON);
-                if (configuration.getExpectedScore() > 0) {
-                    if (report.getTotalScore().doubleValue() < configuration.getExpectedScore()) {
-                        throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + configuration.getExpectedScore());
+                if (expectedScore > 0) {
+                    if (report.getTotalScore().doubleValue() < expectedScore) {
+                        throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
                     }
                 }
 
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder, report);
 
                 String responseWithUrl = null;
-                if (report.isEligibleForStoringExternally() && configuration.isShouldSendReportToCyBench()) {
+                if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
                     report.setReportURL(responseWithUrl);
                 } else {
-                    getLog().info("You may submit your report '" + IOUtils.getReportsPath(configuration.getReportsFolder(), Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
+                    getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
-                if (configuration.isShouldStoreReportToFileSystem()) {
-                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(configuration.getReportsFolder(), Constants.CYB_REPORT_JSON_FILE) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(configuration.getReportsFolder(), Constants.CYB_REPORT_JSON_FILE), reportJSON);
-                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(configuration.getReportsFolder(), Constants.CYB_REPORT_CYB_FILE) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(configuration.getReportsFolder(), Constants.CYB_REPORT_CYB_FILE), reportEncrypted);
+                if (shouldStoreReportToFileSystem) {
+                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_JSON_FILE) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_JSON_FILE), reportJSON);
+                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE), reportEncrypted);
                 }
                 getLog().info("Removing all temporary auto-generated files....");
                 IOUtils.removeTestDataFiles();
