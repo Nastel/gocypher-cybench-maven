@@ -104,10 +104,14 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.skip", defaultValue = "false")
     private boolean skip = false;
 
+    @Parameter(property = "cybench.shouldFailBuildOnReportDeliveryFailure", defaultValue = "false")
+    private boolean shouldFailBuildOnReportDeliveryFailure = false;
+
 
     public void execute() throws MojoExecutionException {
 //        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if(!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null ) {
+            boolean isReportSentSuccessFully = false ;
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
             getLog().info("                                 Starting CyBench benchmarks (Maven Plugin)                             ");
@@ -179,7 +183,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
                     report.setReportURL(responseWithUrl);
-
+                    if (responseWithUrl != null && !responseWithUrl.isEmpty()){
+                        isReportSentSuccessFully = true ;
+                    }
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
@@ -202,6 +208,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 } else {
                     throw new MojoExecutionException("Error during benchmarks run", t);
                 }
+            }
+            if (isReportSentSuccessFully == false && shouldSendReportToCyBench == true && shouldFailBuildOnReportDeliveryFailure == true){
+                throw new MojoExecutionException("Error during benchmarks run, report was not sent to CyBench as configured!");
             }
             getLog().info("-----------------------------------------------------------------------------------------");
             getLog().info("         Finished CyBench benchmarking (" + ComputationUtils.formatInterval(System.currentTimeMillis() - start) + ")");
