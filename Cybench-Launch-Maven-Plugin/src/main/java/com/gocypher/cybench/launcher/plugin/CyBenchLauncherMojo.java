@@ -111,6 +111,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
 //        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if(!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null ) {
+            System.setProperty("collectHw", "true");
             boolean isReportSentSuccessFully = false ;
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
