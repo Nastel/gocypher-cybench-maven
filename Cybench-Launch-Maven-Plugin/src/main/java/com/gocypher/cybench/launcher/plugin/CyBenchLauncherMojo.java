@@ -25,23 +25,20 @@ import com.gocypher.cybench.launcher.environment.model.HardwareProperties;
 import com.gocypher.cybench.launcher.environment.model.JVMProperties;
 import com.gocypher.cybench.launcher.environment.services.CollectSystemInformation;
 import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
+import com.gocypher.cybench.launcher.plugin.utils.PluginUtils;
 import com.gocypher.cybench.launcher.report.DeliveryService;
 import com.gocypher.cybench.launcher.report.ReportingService;
 import com.gocypher.cybench.launcher.utils.ComputationUtils;
 import com.gocypher.cybench.launcher.utils.Constants;
 import com.gocypher.cybench.launcher.utils.SecurityBuilder;
-import com.jcabi.manifests.Manifests;
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.profile.HotspotRuntimeProfiler;
 import org.openjdk.jmh.profile.HotspotThreadProfiler;
@@ -51,12 +48,10 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
-import org.openjdk.jmh.util.Utils;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
 
-import java.io.File;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Mojo( name = "cybench",requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.INTEGRATION_TEST)
 public class CyBenchLauncherMojo extends AbstractMojo {
@@ -101,24 +96,24 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private String reportName = "CyBench Report";
 
     @Parameter(property = "cybench.customBenchmarkMetadata", defaultValue = "")
-    private String userBenchmarkMetadata = "";
+    private String customBenchmarkMetadata = "";
 
     @Parameter(property = "cybench.customProperties", defaultValue = "")
     private String userProperties = "";
 
-    @Parameter(property = "cybench.customProperties", defaultValue = "false")
-    private boolean skip;
+    @Parameter(property = "cybench.skip", defaultValue = "false")
+    private boolean skip = false;
 
 
     public void execute() throws MojoExecutionException {
 //        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
-        if(!skip && System.getProperty("skipCybench") == null ) {
+        if(!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null ) {
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
             getLog().info("                                 Starting CyBench benchmarks (Maven Plugin)                             ");
             getLog().info("-----------------------------------------------------------------------------------------");
             try {
-                this.resolveAndUpdateClasspath(this.project, this.classpathScope);
+                PluginUtils.resolveAndUpdateClasspath(this.getLog(),this.project,this.getPluginContext(), this.classpathScope);
 
                 getLog().info("Collecting hardware, software information...");
                 HardwareProperties hwProperties = CollectSystemInformation.getEnvironmentProperties();
@@ -130,9 +125,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Map<String, Object> benchmarkSettings = new HashMap<>();
 
-                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(userBenchmarkMetadata);
+                Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata);
 
-                this.checkAndConfigureCustomProperties(securityBuilder, benchmarkSettings, customBenchmarksMetadata);
 
                 benchmarkSettings.put("benchThreadCount", threads);
                 benchmarkSettings.put("benchReportName", reportName);
@@ -163,7 +157,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.getEnvironmentSettings().put("environment", hwProperties);
                 report.getEnvironmentSettings().put("jvmEnvironment", jvmProperties);
                 report.getEnvironmentSettings().put("unclassifiedProperties", CollectSystemInformation.getUnclassifiedProperties());
-                report.getEnvironmentSettings().put("userDefinedProperties", customUserDefinedProperties(userProperties));
+                report.getEnvironmentSettings().put("userDefinedProperties", PluginUtils.extractCustomProperties(userProperties));
                 report.setBenchmarkSettings(benchmarkSettings);
 
                 //FIXME add all missing custom properties including public/private flag
@@ -185,14 +179,16 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
                     report.setReportURL(responseWithUrl);
+
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
+
                 if (shouldStoreReportToFileSystem) {
-                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_JSON_FILE) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_JSON_FILE), reportJSON);
-                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE), reportEncrypted);
+                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder,  ComputationUtils.createFileNameForReport(reportName,start,report.getTotalScore(),false)) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder,ComputationUtils.createFileNameForReport(reportName,start,report.getTotalScore(),false)), reportJSON);
+                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(reportsFolder,  ComputationUtils.createFileNameForReport(reportName,start,report.getTotalScore(),true)) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName,start,report.getTotalScore(),true)), reportEncrypted);
                 }
                 getLog().info("Removing all temporary auto-generated files....");
                 IOUtils.removeTestDataFiles();
@@ -215,120 +211,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         }
     }
 
-    private void resolveAndUpdateClasspath (MavenProject project,String classpathScope) throws Exception{
-        /*This part of code resolves project output directory and sets it to plugin class realm that it can find benchmark classes*/
-        final File classes = new File(project.getBuild().getOutputDirectory());
-        final PluginDescriptor pluginDescriptor = (PluginDescriptor) getPluginContext().get("pluginDescriptor");
-        final ClassRealm classRealm = pluginDescriptor.getClassRealm();
-        classRealm.addURL(classes.toURI().toURL());
 
-        //getLog().info(project.getCompileClasspathElements().toString());
-        //getLog().info(project.getRuntimeClasspathElements().toString());
-        //getLog().info(project.getTestClasspathElements().toString());
-
-        /*This part of code resolves libraries used in project and sets it to System classpath that JMH could use it.*/
-        List<Artifact> artifacts = new ArrayList<Artifact>();
-        List<File> theClasspathFiles = new ArrayList<File>();
-        collectProjectArtifactsAndClasspath(artifacts, theClasspathFiles,classpathScope);
-        Set<String> classPaths = new HashSet<String>();
-
-        for (File f : theClasspathFiles) {
-            classPaths.add(f.getAbsolutePath());
-        }
-
-        for (Artifact artifact : artifacts) {
-            classPaths.add(artifact.getFile().getAbsolutePath());
-        }
-        StringBuilder tmpClasspath = new StringBuilder();
-
-        if (classPaths != null) {
-            for (String classPath : classPaths) {
-                if (Utils.isWindows()) {
-                    tmpClasspath.append(";").append(classPath);
-                } else {
-                    tmpClasspath.append(":").append(classPath);
-                }
-            }
-        }
-
-        /* This update of the classpath is required in order to successfully launch JMH forked JVM's correctly and avoid failures because of missing classpath libraries. JMH forked JVM's inherits System classpath.*/
-        String finalClassPath = System.getProperty("java.class.path")+tmpClasspath.toString() ;
-        System.setProperty("java.class.path",finalClassPath);
-
-        getLog().info("Benchmarks classpath:"+System.getProperty("java.class.path"));
-
-    }
-    private void collectProjectArtifactsAndClasspath(List<Artifact> artifacts, List<File> theClasspathFiles,String classpathScope) {
-
-        if ("compile".equals(classpathScope)) {
-            artifacts.addAll(project.getCompileArtifacts());
-            theClasspathFiles.add(new File(project.getBuild().getOutputDirectory()));
-        } else if ("test".equals(classpathScope)) {
-            artifacts.addAll(project.getTestArtifacts());
-            theClasspathFiles.add(new File(project.getBuild().getTestOutputDirectory()));
-            theClasspathFiles.add(new File(project.getBuild().getOutputDirectory()));
-        } else if ("runtime".equals(classpathScope)) {
-            artifacts.addAll(project.getRuntimeArtifacts());
-            theClasspathFiles.add(new File(project.getBuild().getOutputDirectory()));
-        } else if ("system".equals(classpathScope)) {
-            artifacts.addAll(project.getSystemArtifacts());
-        } else {
-            throw new IllegalStateException("Invalid classpath scope: " + classpathScope);
-        }
-
-        getLog().debug("Collected project artifacts " + artifacts);
-        getLog().debug("Collected project classpath " + theClasspathFiles);
-    }
-
-    private void checkAndConfigureCustomProperties (SecurityBuilder securityBuilder
-                                                    ,Map<String,Object>benchmarkSettings
-                                                    ,Map<String,Map<String,String>>customBenchmarksMetadata){
-
-        Reflections reflections = new Reflections("com.gocypher.cybench.", new SubTypesScanner(false));
-        Set<Class<? extends Object>> allDefaultClasses = reflections.getSubTypesOf(Object.class);
-        String tempBenchmark = null;
-        for (Class<? extends Object> classObj : allDefaultClasses) {
-            if (!classObj.getName().isEmpty() && classObj.getSimpleName().contains("Benchmarks")
-                    && !classObj.getSimpleName().contains("_")) {
-                // LOG.info("==>Default found:{}",classObj.getName());
-                // We do not include any class, because then JMH will discover all benchmarks
-                // automatically including custom ones.
-                // optBuild.include(classObj.getName());
-                tempBenchmark = classObj.getName();
-                securityBuilder.generateSecurityHashForClasses(classObj);
-            }
-        }
-        if (tempBenchmark != null) {
-            String manifestData = null;
-            if (Manifests.exists("customBenchmarkMetadata")) {
-                manifestData = Manifests.read("customBenchmarkMetadata");
-            }
-            Map<String, Map<String, String>> benchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(manifestData);
-            Map<String, String> benchProps;
-            if (manifestData != null) {
-                benchProps = ReportingService.getInstance().prepareBenchmarkSettings(tempBenchmark, benchmarksMetadata);
-            } else {
-                benchProps = ReportingService.getInstance().prepareBenchmarkSettings(tempBenchmark, customBenchmarksMetadata);
-            }
-            benchmarkSettings.putAll(benchProps);
-        }
-
-    }
-    private static Map<String, Object> customUserDefinedProperties(String customPropertiesStr) {
-        Map<String, Object> customUserProperties = new HashMap<>();
-        if (customPropertiesStr != null && !customPropertiesStr.isEmpty()){
-            String [] pairs = customPropertiesStr.split(";") ;
-            for (String pair:pairs){
-                String [] kv = pair.split("=");
-                if (kv.length == 2){
-                    customUserProperties.put(kv[0],kv[1]) ;
-                }
-            }
-        }
-
-
-        return customUserProperties;
-    }
 
 
 }
