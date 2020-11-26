@@ -67,15 +67,19 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.classpathScope", defaultValue = "runtime")
     protected String classpathScope;
 
-    @Parameter(property = "cybench.measurementIterations", defaultValue = "1")
-    private int measurementIterations = 1;
+    @Parameter(property = "cybench.measurementIterations", defaultValue = "5")
+    private int measurementIterations = 5;
+
+    @Parameter(property = "cybench.measurementTime", defaultValue = "10")
+    private int measurementTime = 10 ;
 
     /** The warm-up iteration count for all benchmarks*/
-    @Parameter(property = "cybench.warmUpIterations", defaultValue = "1")
-    private int warmUpIterations = 1;
+    @Parameter(property = "cybench.warmUpIterations", defaultValue = "3")
+    private int warmUpIterations = 3;
+
     /** The warm-up time for all benchmarks*/
-    @Parameter(property = "cybench.warmUpSeconds", defaultValue = "5")
-    private int warmUpSeconds = 5;
+    @Parameter(property = "cybench.warmUpTime", defaultValue = "5")
+    private int warmUpTime = 5;
 
     @Parameter(property = "cybench.expectedScore", defaultValue = "-1.0")
     private double expectedScore = -1.0d;
@@ -140,9 +144,10 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 OptionsBuilder optBuild = new OptionsBuilder();
                 Options opt = optBuild.forks(forks)
+                        .measurementTime(TimeValue.seconds(measurementTime))
                         .measurementIterations(measurementIterations)
                         .warmupIterations(warmUpIterations)
-                        .warmupTime(TimeValue.seconds(warmUpIterations))
+                        .warmupTime(TimeValue.seconds(warmUpTime))
                         .threads(threads)
                         .shouldDoGC(true)
                         .addProfiler(GCProfiler.class)
