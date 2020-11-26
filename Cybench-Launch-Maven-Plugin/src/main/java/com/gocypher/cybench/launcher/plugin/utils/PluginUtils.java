@@ -38,7 +38,7 @@ public class PluginUtils {
     public static final String KEY_SYSTEM_CLASSPATH = "java.class.path";
 
 
-    public static Map<String, Object> extractCustomProperties(String customPropertiesStr) {
+    public static Map<String, Object> extractKeyValueProperties(String customPropertiesStr) {
         Map<String, Object> customProperties = new HashMap<>();
         if (customPropertiesStr != null && !customPropertiesStr.isEmpty()) {
             String[] pairs = customPropertiesStr.split(";");

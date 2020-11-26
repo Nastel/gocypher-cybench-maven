@@ -102,7 +102,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.customBenchmarkMetadata", defaultValue = "")
     private String customBenchmarkMetadata = "";
 
-    @Parameter(property = "cybench.customProperties", defaultValue = "")
+    @Parameter(property = "cybench.userProperties", defaultValue = "")
     private String userProperties = "";
 
     @Parameter(property = "cybench.skip", defaultValue = "false")
@@ -167,7 +167,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.getEnvironmentSettings().put("environment", hwProperties);
                 report.getEnvironmentSettings().put("jvmEnvironment", jvmProperties);
                 report.getEnvironmentSettings().put("unclassifiedProperties", CollectSystemInformation.getUnclassifiedProperties());
-                report.getEnvironmentSettings().put("userDefinedProperties", PluginUtils.extractCustomProperties(userProperties));
+                report.getEnvironmentSettings().put("userDefinedProperties", PluginUtils.extractKeyValueProperties(userProperties));
                 report.setBenchmarkSettings(benchmarkSettings);
 
                 //FIXME add all missing custom properties including public/private flag
