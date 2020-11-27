@@ -13,8 +13,8 @@ Set the execution parameters:
 
 **Prerequisites**
 
-* A project must have dependencies to JMH framework and contain classes which implements benchamrks using JMH framework.
-* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally and install it to local Maven repository. See section `CyBench Maven Plugin Build` for details.
+* A project must have dependencies to JMH framework and contain classes which implements benchmarks using JMH framework.
+* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally and install it to local Maven repository. See section [CyBench Maven Plugin Build](#cybench-maven-plugin-build) for details.
 
 Plugin is configurable inside plugin configuration tags. 
 
@@ -28,15 +28,16 @@ Properties available for plugin behaviour configuration:
 | **measurementTime**| Time (in seconds) used for measurement execution (applies only for benchmarks where mode is throughput).     |    10 |
 | **warmUpIterations**| Number of iterations for each benchmark warm-up.      |    3 |
 | **warmUpTime**| Time (in seconds) used for warm-up execution (applies only for benchmarks where mode is throughput).     |    5 |
-| **expectedScore**| Threshold for a total score. If report total score islower then build fails.  |    -1 |
+| **expectedScore**| Threshold for a total score. If report total score is lower then build fails.  |    -1 |
 | **shouldSendReportToCyBench**| A boolean flag which indicates if the benchmark report should be sent to CyBench.  |    false |
+| **shouldStoreReportToFileSystem** | A boolean flag which indicates if the benchmark report should be saved to file system | true |
 | **reportsFolder**| Location in a local file system where reports shall be stored.  |    Current execution directory. |
 | **reportUploadStatus**| Parameter which indicates if the report is public or private. Possible values: `public`, `private`  |   public  |
 | **reportName**| Name of the benchmark report. |   CyBench Report  |
 | **customBenchmarkMetadata**| A property which adds extra properties to the benchmarks report such as category or version or context. Configuration pattern is `<fully qualified benchmark class name>=<key1>:<value1>;<key2>:<value2>`. Example which adds category for class CollectionsBenchmarks: `com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;`   |   -  |
 | **userProperties**| User defined properties which will be added to benchmarks report section `environmentSettings->userDefinedProperties` as key/value strings. Configuration pattern:`<key1>:<value1>;<key2>:<value2>`. Example which adds a project name:`project=My Test Project;` |   -  |
 | **skip**| A flag which allows to skip benchmarks execution during build process. Benchmarks execution also can be skipped via JVM system property `-DskipCybench`. |   false  |
-| **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false 
+| **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false |
 
 ### Example of CyBench Maven plugin configuration
 
@@ -66,7 +67,7 @@ Properties available for plugin behaviour configuration:
         <reportUploadStatus>private</reportUploadStatus>
         <reportsFolder>C:/CyBench/reports/</reportsFolder>
         <reportName>My Private Build Process Benchmark</reportName>
-        <customProperties>project=My Test Project;</customProperties>
+        <userProperties>project=My Test Project;</userProperties>
         <customBenchmarkMetadata>com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;</customBenchmarkMetadata>		
     </configuration>
 </plugin>
