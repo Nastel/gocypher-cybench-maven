@@ -97,6 +97,7 @@ mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0-SNAPSHO
 ```
 ### Start using CyBench Maven plugin
 
+Include dependecy to CyBench Maven plugin in your project `pom.xml` file as described in the chapters above and start using it.
 
 ## CyBench Maven Plugin Building
 
