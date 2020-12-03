@@ -45,7 +45,7 @@ Properties available for plugin behaviour configuration:
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
     <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <executions>
         <execution>
             <phase>test</phase>
@@ -85,7 +85,7 @@ Releases page contains CyBench Maven plugin and its dependencies binaries (packa
 
 Install CyBench Maven plugin binaries (subfolder in zip file `cybench-maven-plugin`) to local Maven repository using command:
 ```sh
-mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0-SNAPSHOT.jar -DgroupId=com.gocypher.cybench.launcher.plugin -DartifactId=gocypher-cybench-launch-maven-plugin 
+mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0.0.jar -DgroupId=com.gocypher.cybench.launcher.plugin -DartifactId=gocypher-cybench-launch-maven-plugin 
 ```
 ### Start using CyBench Maven plugin
 
