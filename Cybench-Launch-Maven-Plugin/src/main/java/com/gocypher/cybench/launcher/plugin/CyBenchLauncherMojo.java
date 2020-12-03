@@ -112,6 +112,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean shouldFailBuildOnReportDeliveryFailure = false;
 
 
+    private static final  String benchSource = "Maven plugin";
+
     public void execute() throws MojoExecutionException {
 //        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if(!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null ) {
@@ -136,6 +138,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata);
 
+                benchmarkSettings.put("benchSource", benchSource);
                 benchmarkSettings.put("benchWarmUpIteration", warmUpIterations);
                 benchmarkSettings.put("benchWarmUpSeconds", warmUpTime);
                 benchmarkSettings.put("benchMeasurementIteration", measurementIterations);
