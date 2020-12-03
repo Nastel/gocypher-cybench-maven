@@ -81,19 +81,11 @@ Releases page contains CyBench Maven plugin and its dependencies binaries (packa
 
 * Maven command line tools on local machine.
 
-### Install of CyBench Launcher binaries
-
-Install CyBench launcher binaries (subfolder in zip file `cybench-launcher`) to local Maven repository using commands
-
-```sh
-mvn install:install-file -Dfile=gocypher-cybench-core-1.0.0.jar -DgroupId=com.gocypher.cybench.client -DartifactId=gocypher-cybench-core -Dversion=1.0.0 -Dpackaging=jar
-mvn install:install-file -Dfile=gocypher-cybench-runner-1.0.0-jar-with-dependencies.jar -DgroupId=com.gocypher.cybench.client -DartifactId=gocypher-cybench-runner -Dversion=1.0.0 -Dpackaging=jar
-```
 ### Install CyBench Maven plugin binaries
 
 Install CyBench Maven plugin binaries (subfolder in zip file `cybench-maven-plugin`) to local Maven repository using command:
 ```sh
-mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0-SNAPSHOT.jar -DpomFile=pom.xml
+mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0-SNAPSHOT.jar -DgroupId=com.gocypher.cybench.launcher.plugin -DartifactId=gocypher-cybench-launch-maven-plugin 
 ```
 ### Start using CyBench Maven plugin
 
