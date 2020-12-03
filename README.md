@@ -14,7 +14,7 @@ Set the execution parameters:
 **Prerequisites**
 
 * A project must have dependencies to JMH framework and contain classes which implements benchmarks using JMH framework.
-* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally and install it to local Maven repository. See section [CyBench Maven Plugin Build](#cybench-maven-plugin-build) for details.
+* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally and install it to local Maven repository. See section [CyBench Maven Plugin Build](#cybench-maven-plugin-building) for details.
 
 Plugin is configurable inside plugin configuration tags. 
 
