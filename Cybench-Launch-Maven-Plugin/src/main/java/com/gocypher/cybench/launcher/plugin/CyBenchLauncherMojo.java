@@ -136,7 +136,11 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata);
 
-
+                benchmarkSettings.put("benchWarmUpIteration", warmUpIterations);
+                benchmarkSettings.put("benchWarmUpSeconds", warmUpTime);
+                benchmarkSettings.put("benchMeasurementIteration", measurementIterations);
+                benchmarkSettings.put("benchMeasurementSeconds", measurementTime);
+                benchmarkSettings.put("benchForkCount", forks);
                 benchmarkSettings.put("benchThreadCount", threads);
                 benchmarkSettings.put("benchReportName", reportName);
 

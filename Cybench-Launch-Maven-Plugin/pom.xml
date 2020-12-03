@@ -75,6 +75,7 @@
                 </goals>
                 <phase>package</phase>
                 <configuration>
+                  <appendAssemblyId>false</appendAssemblyId>
                   <outputDirectory>${release.deploy.dir}</outputDirectory>
                   <descriptors>
                     <descriptor>/src/assembleRelease.xml</descriptor>
