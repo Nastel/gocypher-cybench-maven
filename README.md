@@ -75,7 +75,7 @@ Properties available for plugin behaviour configuration:
 
 ## CyBench Maven Plugin Binaries install for immediate use
 
-[Releases page](#https://github.com/K2NIO/gocypher-cybench-maven/releases) contains CyBench Maven plugin and its dependencies binaries (packaged in a zip file), which are possible to install to local Maven repository and start using it from any project immediatelly (without need to build any CyBench projects).
+[Releases page](https://github.com/K2NIO/gocypher-cybench-maven/releases) contains CyBench Maven plugin and its dependencies binaries (packaged in a zip file), which are possible to install to local Maven repository and start using it from any project immediatelly (without need to build any CyBench projects).
 
 **Prerequisites**
 
