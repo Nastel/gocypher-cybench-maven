@@ -54,24 +54,20 @@ public class PluginUtils {
 
 
     public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map pluginContext, String classpathScope) throws Exception {
-        /*This part of code resolves project output directory and sets it to plugin class realm that it can find benchmark classes*/
+        /*This part of code resolves project output directory and sets it Benchmarks classpath to plugin class realm that it can find benchmark classes*/
         final File classes = new File(project.getBuild().getOutputDirectory());
+        final File classesTest = new File(project.getBuild().getTestOutputDirectory());
         final PluginDescriptor pluginDescriptor = (PluginDescriptor) pluginContext.get("pluginDescriptor");
         final ClassRealm classRealm = pluginDescriptor.getClassRealm();
         classRealm.addURL(classes.toURI().toURL());
-
-        //getLog().info(project.getCompileClasspathElements().toString());
-        //getLog().info(project.getRuntimeClasspathElements().toString());
-        //getLog().info(project.getTestClasspathElements().toString());
+        classRealm.addURL(classesTest.toURI().toURL());
 
         /*This part of code resolves libraries used in project and sets it to System classpath that JMH could use it.*/
         List<Artifact> artifacts = new ArrayList<Artifact>();
         List<File> theClasspathFiles = new ArrayList<File>();
-
         collectProjectArtifactsAndClasspathByScope(project, artifacts, theClasspathFiles, classpathScope);
-
+        theClasspathFiles.add(new File(project.getBuild().getTestOutputDirectory()));
         Set<String> classPaths = new HashSet<String>();
-
         for (File f : theClasspathFiles) {
             classPaths.add(f.getAbsolutePath());
         }
@@ -90,7 +86,6 @@ public class PluginUtils {
                 }
             }
         }
-
         /* This update of the classpath is required in order to successfully launch JMH forked JVM's correctly and avoid failures because of missing classpath libraries. JMH forked JVM's inherits System classpath.*/
         String finalClassPath = System.getProperty(KEY_SYSTEM_CLASSPATH) + tmpClasspath.toString();
         System.setProperty(KEY_SYSTEM_CLASSPATH, finalClassPath);
@@ -103,7 +98,6 @@ public class PluginUtils {
                                                                    List<Artifact> artifacts,
                                                                    List<File> theClasspathFiles,
                                                                    String classpathScope) {
-
         if (SCOPE_COMPILE.equals(classpathScope)) {
             artifacts.addAll(project.getCompileArtifacts());
             theClasspathFiles.add(new File(project.getBuild().getOutputDirectory()));
