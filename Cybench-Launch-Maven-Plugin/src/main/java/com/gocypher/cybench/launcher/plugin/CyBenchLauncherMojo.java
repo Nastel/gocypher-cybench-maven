@@ -103,6 +103,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean skip = false;
     @Parameter(property = "cybench.shouldFailBuildOnReportDeliveryFailure", defaultValue = "false")
     private boolean shouldFailBuildOnReportDeliveryFailure = false;
+    @Parameter(property = "cybench.useCyBenchBenchmarkSettings", defaultValue = "true")
+    private boolean useCyBenchBenchmarkSettings =true;
 
     public void execute() throws MojoExecutionException {
 //        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
@@ -140,19 +142,30 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("Executing benchmarks...");
 
                 OptionsBuilder optBuild = new OptionsBuilder();
-                Options opt = optBuild.forks(forks)
-                        .measurementTime(TimeValue.seconds(measurementTime))
-                        .measurementIterations(measurementIterations)
-                        .warmupIterations(warmUpIterations)
-                        .warmupTime(TimeValue.seconds(warmUpTime))
-                        .threads(threads)
-                        .shouldDoGC(true)
-                        .addProfiler(GCProfiler.class)
-                        .addProfiler(HotspotThreadProfiler.class)
-                        .addProfiler(HotspotRuntimeProfiler.class)
-                        .addProfiler(SafepointsProfiler.class)
-                        .detectJvmArgs()
-                        .build();
+                Options opt;
+                if(useCyBenchBenchmarkSettings) {
+                    opt = optBuild.forks(forks)
+                            .measurementTime(TimeValue.seconds(measurementTime))
+                            .measurementIterations(measurementIterations)
+                            .warmupIterations(warmUpIterations)
+                            .warmupTime(TimeValue.seconds(warmUpTime))
+                            .threads(threads)
+                            .shouldDoGC(true)
+                            .addProfiler(GCProfiler.class)
+                            .addProfiler(HotspotThreadProfiler.class)
+                            .addProfiler(HotspotRuntimeProfiler.class)
+                            .addProfiler(SafepointsProfiler.class)
+                            .detectJvmArgs()
+                            .build();
+                }else{
+                    opt = optBuild.shouldDoGC(true)
+                            .addProfiler(GCProfiler.class)
+                            .addProfiler(HotspotThreadProfiler.class)
+                            .addProfiler(HotspotRuntimeProfiler.class)
+                            .addProfiler(SafepointsProfiler.class)
+                            .detectJvmArgs()
+                            .build();
+                }
 
                 Runner runner = new Runner(opt);
 
