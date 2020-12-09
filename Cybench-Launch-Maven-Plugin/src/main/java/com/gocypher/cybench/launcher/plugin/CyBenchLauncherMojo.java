@@ -52,10 +52,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Mojo(name = "cybench", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.INTEGRATION_TEST)
@@ -198,13 +195,18 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.setBenchmarkSettings(benchmarkSettings);
 
 
-                List<BenchmarkReport> custom = report.getBenchmarks().get("CUSTOM").stream().collect(Collectors.toList());
-                custom.stream().forEach(benchmarkReport -> {
-                    String name = benchmarkReport.getName();
-                    benchmarkReport.setClassFingerprint(classFingerprints.get(name));
-                    benchmarkReport.setGeneratedFingerprint(generatedFingerprints.get(name));
-                    benchmarkReport.setManualFingerprint(manualFingerprints.get(name));
-                });
+                Iterator<String> it = report.getBenchmarks().keySet().iterator() ;
+
+                while (it.hasNext()) {
+                    List<BenchmarkReport> custom = report.getBenchmarks().get(it.next()).stream().collect(Collectors.toList());
+                    custom.stream().forEach(benchmarkReport -> {
+                        String name = benchmarkReport.getName();
+                        benchmarkReport.setClassFingerprint(classFingerprints.get(name));
+                        benchmarkReport.setGeneratedFingerprint(generatedFingerprints.get(name));
+                        benchmarkReport.setManualFingerprint(manualFingerprints.get(name));
+
+                    });
+                }
 
                 getLog().info("-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
