@@ -211,8 +211,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
                 getLog().info("-----------------------------------------------------------------------------------------");
-                String reportJSON = JSONUtils.marshalToPrettyJson(report);
-                getLog().info(reportJSON);
+
                 if (expectedScore > 0) {
                     if (report.getTotalScore().doubleValue() < expectedScore) {
                         throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
@@ -224,14 +223,17 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String responseWithUrl = null;
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
+                    getLog().info("responseWithUrl - " + responseWithUrl);
                     report.setReportURL(responseWithUrl);
+                    getLog().info("report - " + report);
                     if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
                         isReportSentSuccessFully = true;
                     }
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
-
+                String reportJSON = JSONUtils.marshalToPrettyJson(report);
+                getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
                     getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)) + "'");
                     IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)), reportJSON);
