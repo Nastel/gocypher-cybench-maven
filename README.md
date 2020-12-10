@@ -91,6 +91,25 @@ mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0.0.jar -
 
 Include dependency to CyBench Maven plugin in your project `pom.xml` file as described in the [chapters above](#cybench-maven-plugin-usage) and start using it.
 
+#### Optional: gocypher-cybench-annotation For adding custom benchmark annotations @BenchmarkTag
+
+Install annotation binaries into your local maven repository
+
+```sh
+mvn install:install-file -Dfile=gocypher-cybench-annotations-1.0.0.jar -DgroupId=com.gocypher.cybench.client -DartifactId=gocypher-cybench-annotations -Dversion=1.0.0 -Dpackaging=jar
+```
+
+Include dependency to annotation processor in your project `pom.xml` file before the jmh annotation processor. 
+
+**Notice:** First launch will generate the annotations for benchmarks and fail build.
+```pom.xml
+    <dependency>
+        <groupId>com.gocypher.cybench.client</groupId>
+        <artifactId>gocypher-cybench-annotations</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+```
+
 ## CyBench Maven Plugin Building
 
 This step is required in order to use CyBench Maven plugin during build process until it and its dependencies are not released to Central Maven repository.
