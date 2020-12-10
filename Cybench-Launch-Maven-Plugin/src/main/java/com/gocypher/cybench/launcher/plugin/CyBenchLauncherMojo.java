@@ -223,9 +223,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String responseWithUrl = null;
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
-                    getLog().info("responseWithUrl - " + responseWithUrl);
                     report.setReportURL(responseWithUrl);
-                    getLog().info("report - " + report);
                     if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
                         isReportSentSuccessFully = true;
                     }
