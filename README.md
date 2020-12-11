@@ -1,8 +1,48 @@
 # GoCypher CyBench Maven plugin
 
-CyBench Maven plugin allows to run CyBench benchmark tests, generate report and send it to CyBench during software build process. Plugin is simply attached to project POM file and also can be used in continuous integration (CI) systems. CyBench Maven plugin executes all classes which uses JMH framework for benchmark implementation and creates a report to specified location at the end of benchmarking process. As CyBench report contains total score, so it is possible to configure build failure if score does not pass the pre-defined threshold.
+[CyBench](https://www.gocypher.com/cybench/)  Maven plugin allows to run CyBench benchmark tests, generate report and send it to CyBench during software build process. 
 
-Notice that benchmarks are run on the server where software is built, so the builds machine must have enough HW resources for a successful and stable benchmarking of software items.  
+Plugin is simply attached to project POM file and also can be used in continuous integration (CI) systems. 
+
+CyBench Maven plugin executes all classes which uses JMH framework for benchmark implementation and creates a report to specified location at the end of benchmarking process. As CyBench report contains total score, so it is possible to configure build failure if score does not pass the pre-defined threshold.
+
+**Notice** that benchmarks are run on the server where software is built, so the builds machine must have enough HW resources for a successful and stable benchmarking of software items.  
+
+
+## CyBench Maven Plugin Install
+
+[Releases page](https://github.com/K2NIO/gocypher-cybench-maven/releases) contains CyBench Maven plugin and its dependencies binaries (packaged in a zip file), which are possible to install to local Maven repository and start using it from any project immediatelly (without need to build any CyBench projects).
+
+**Prerequisites** Maven command line tools on local machine.
+
+### Install CyBench Maven plugin binaries
+
+Install CyBench Maven plugin binaries (subfolder in zip file `cybench-maven-plugin`) to local Maven repository using cmd and command:
+```sh
+mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0.0.jar -DgroupId=com.gocypher.cybench.launcher.plugin -DartifactId=gocypher-cybench-launch-maven-plugin -Dversion=1.0.0  -Dpackaging=jar
+```
+### Start using CyBench Maven plugin
+
+Include dependency to CyBench Maven plugin in your project `pom.xml` file as described in the [chapters below](#cybench-maven-plugin-usage) and start using it.
+
+#### Optional: gocypher-cybench-annotation For adding custom benchmark annotations @BenchmarkTag
+
+Install annotation binaries into your local maven repository
+
+```sh
+mvn install:install-file -Dfile=gocypher-cybench-annotations-1.0.0.jar -DgroupId=com.gocypher.cybench.client -DartifactId=gocypher-cybench-annotations -Dversion=1.0.0 -Dpackaging=jar
+```
+
+Include dependency to annotation processor in your project `pom.xml` file before the jmh annotation processor. 
+
+**Notice:** First launch will generate the annotations for benchmarks and fail build.
+```pom.xml
+    <dependency>
+        <groupId>com.gocypher.cybench.client</groupId>
+        <artifactId>gocypher-cybench-annotations</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+```
 
 ## CyBench Maven Plugin Usage
 
@@ -11,14 +51,30 @@ Set the execution parameters:
 * execution phase `test` 
 * execution goal `cybench`.
 
+```xml
+    <plugin>
+        <groupId>com.gocypher.cybench.launcher.plugin</groupId>
+        <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <executions>
+            <execution>
+                <phase>test</phase>
+                <goals>
+                    <goal>cybench</goal>
+                </goals>
+            </execution>
+        </executions>
+    </plugin>
+```
+
 **Prerequisites**
 
 * A project must have dependencies to JMH framework and contain classes which implements benchmarks using JMH framework.
-* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally or download the binary from releases and install it to local Maven repository. See sections [CyBench Maven Plugin Binaries install for immediate use](#cybench-maven-plugin-binaries-install-for-immediate-use) and [CyBench Maven Plugin Build](#cybench-maven-plugin-building)  for details.
+* Until CyBench Maven plugin and its dependencies are not released to Central Maven repository must build `GoCypher CyBench Launch Maven Plugin` locally or download the binary from releases and install it to local Maven repository. See sections [CyBench Maven Plugin Binaries install ](#cybench-maven-plugin-install) and [CyBench Maven Plugin Build](#cybench-maven-plugin-building)  for details.
 
-Plugin is configurable inside plugin configuration tags. 
+##Configuration
 
-Properties available for plugin behaviour configuration:
+Plugin is configurable inside plugin configuration tags. Properties available for plugin behaviour configuration:
 
 | Property name        | Description           | Default value  |
 | ------------- |-------------| -----:|
@@ -73,43 +129,6 @@ Properties available for plugin behaviour configuration:
 </plugin>
 ```
 
-## CyBench Maven Plugin Binaries install for immediate use
-
-[Releases page](https://github.com/K2NIO/gocypher-cybench-maven/releases) contains CyBench Maven plugin and its dependencies binaries (packaged in a zip file), which are possible to install to local Maven repository and start using it from any project immediatelly (without need to build any CyBench projects).
-
-**Prerequisites**
-
-* Maven command line tools on local machine.
-
-### Install CyBench Maven plugin binaries
-
-Install CyBench Maven plugin binaries (subfolder in zip file `cybench-maven-plugin`) to local Maven repository using cmd and command:
-```sh
-mvn install:install-file -Dfile=gocypher-cybench-launch-maven-plugin-1.0.0.jar -DgroupId=com.gocypher.cybench.launcher.plugin -DartifactId=gocypher-cybench-launch-maven-plugin -Dversion=1.0.0  -Dpackaging=jar
-```
-### Start using CyBench Maven plugin
-
-Include dependency to CyBench Maven plugin in your project `pom.xml` file as described in the [chapters above](#cybench-maven-plugin-usage) and start using it.
-
-#### Optional: gocypher-cybench-annotation For adding custom benchmark annotations @BenchmarkTag
-
-Install annotation binaries into your local maven repository
-
-```sh
-mvn install:install-file -Dfile=gocypher-cybench-annotations-1.0.0.jar -DgroupId=com.gocypher.cybench.client -DartifactId=gocypher-cybench-annotations -Dversion=1.0.0 -Dpackaging=jar
-```
-
-Include dependency to annotation processor in your project `pom.xml` file before the jmh annotation processor. 
-
-**Notice:** First launch will generate the annotations for benchmarks and fail build.
-```pom.xml
-    <dependency>
-        <groupId>com.gocypher.cybench.client</groupId>
-        <artifactId>gocypher-cybench-annotations</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-```
-
 ## CyBench Maven Plugin Building
 
 This step is required in order to use CyBench Maven plugin during build process until it and its dependencies are not released to Central Maven repository.
@@ -139,3 +158,8 @@ This step is required in order to use CyBench Maven plugin during build process 
 ```
 * After successful run project JAR's are installed to local Maven repository.
 
+## More information on benchmarking your code
+* [Avoiding Benchmarking Pitfalls on the JVM](https://www.oracle.com/technical-resources/articles/java/architect-benchmarking.html#:~:text=JMH%20is%20a%20Java%20harness,to%20unwanted%20virtual%20machine%20optimizations)
+* [JMH - Java Microbenchmark Harness](http://tutorials.jenkov.com/java-performance/jmh.html)
+* [Java Benchmarks with JMH](https://medium.com/swlh/java-benchmarks-with-jmh-a-preamble-285510a77dd2)
+* [Microbenchmarking with Java](https://www.baeldung.com/java-microbenchmark-harness)
