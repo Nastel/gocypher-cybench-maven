@@ -93,6 +93,12 @@ public class PluginUtils {
         log.info("Benchmarks classpath:" + System.getProperty(KEY_SYSTEM_CLASSPATH));
 
     }
+    public static String checkReportSaveLocation(String fileName){
+        if(!fileName.endsWith("/")){
+            fileName = fileName +"/";
+        }
+        return fileName;
+    }
 
     private static void collectProjectArtifactsAndClasspathByScope(MavenProject project,
                                                                    List<Artifact> artifacts,

@@ -104,7 +104,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean useCyBenchBenchmarkSettings =true;
 
     public void execute() throws MojoExecutionException {
-//        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
             boolean isReportSentSuccessFully = false;
@@ -120,7 +119,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("Collecting JVM properties...");
                 JVMProperties jvmProperties = CollectSystemInformation.getJavaVirtualMachineProperties();
 
-                //FIXME generate security hashes for report classes found on the classpath
                 SecurityBuilder securityBuilder = new SecurityBuilder();
 
                 Map<String, Object> benchmarkSettings = new HashMap<>();
@@ -212,15 +210,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("Report score - " + report.getTotalScore());
                 getLog().info("-----------------------------------------------------------------------------------------");
 
-                if (expectedScore > 0) {
-                    if (report.getTotalScore().doubleValue() < expectedScore) {
-                        throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
-                    }
+                if (expectedScore > 0 && report.getTotalScore().doubleValue() < expectedScore) {
+                    throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
                 }
 
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder, report);
-
-                String responseWithUrl = null;
+                reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
+                String responseWithUrl;
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
                     report.setReportURL(responseWithUrl);
@@ -251,7 +247,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     throw new MojoExecutionException("Error during benchmarks run", t);
                 }
             }
-            if (isReportSentSuccessFully == false && shouldSendReportToCyBench == true && shouldFailBuildOnReportDeliveryFailure == true) {
+            if (!isReportSentSuccessFully && shouldSendReportToCyBench && shouldFailBuildOnReportDeliveryFailure) {
                 throw new MojoExecutionException("Error during benchmarks run, report was not sent to CyBench as configured!");
             }
             getLog().info("-----------------------------------------------------------------------------------------");
