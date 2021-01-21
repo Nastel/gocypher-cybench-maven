@@ -52,6 +52,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -121,7 +122,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 SecurityBuilder securityBuilder = new SecurityBuilder();
 
-                Map<String, Object> benchmarkSettings = new HashMap<>();
+                Map<String, Object> benchmarkSettings = new HashMap<String, Object>();
 
                 Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata);
 
@@ -164,9 +165,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Runner runner = new Runner(opt);
 
-                Map<String, String> generatedFingerprints = new HashMap<>();
-                Map<String, String> manualFingerprints = new HashMap<>();
-                Map<String, String> classFingerprints = new HashMap<>();
+                Map<String, String> generatedFingerprints = new HashMap<String, String>();
+                Map<String, String> manualFingerprints = new HashMap<String, String>();
+                Map<String, String> classFingerprints = new HashMap<String, String>();
 
                 List<String> benchmarkNames = JMHUtils.getAllBenchmarkClasses();
                 for (String benchmarkClass : benchmarkNames) {
@@ -202,10 +203,28 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                         benchmarkReport.setClassFingerprint(classFingerprints.get(name));
                         benchmarkReport.setGeneratedFingerprint(generatedFingerprints.get(name));
                         benchmarkReport.setManualFingerprint(manualFingerprints.get(name));
+                        try {
+                            JMHUtils.ClassAndMethod classAndMethod = new JMHUtils.ClassAndMethod(name).invoke();
+                            String clazz = classAndMethod.getClazz();
+                            String method = classAndMethod.getMethod();
+                            getLog().info("Adding metadata for benchamrk: " + clazz + " test: " + method);
+                            Class<?> aClass = Class.forName(clazz);
+                            Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
+                            PluginUtils.appendMetadataFromMethod(benchmarkMethod, benchmarkReport);
+                            PluginUtils.appendMetadataFromClass(aClass, benchmarkReport);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
 
                     });
                 }
-
+                List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
+                report.getBenchmarks().remove("CUSTOM");
+                for(BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
+                    report.addToBenchmarks(benchReport);
+                }
+                report.computeScores();
+                PluginUtils.getReportUploadStatus(report);
                 getLog().info("-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
                 getLog().info("-----------------------------------------------------------------------------------------");

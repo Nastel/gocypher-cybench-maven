@@ -18,6 +18,11 @@
  */
 package com.gocypher.cybench.launcher.plugin.utils;
 
+import com.gocypher.cybench.core.annotation.BenchmarkMetaData;
+import com.gocypher.cybench.core.annotation.CyBenchMetadataList;
+import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
+import com.gocypher.cybench.launcher.model.BenchmarkReport;
+import com.gocypher.cybench.launcher.utils.Constants;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.logging.Log;
@@ -26,6 +31,7 @@ import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.openjdk.jmh.util.Utils;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class PluginUtils {
@@ -36,7 +42,7 @@ public class PluginUtils {
     private static final String SCOPE_SYSTEM = "system";
     public static final String KEY_SKIP_CYBENCH = "skipCybench";
     public static final String KEY_SYSTEM_CLASSPATH = "java.class.path";
-
+    static Properties cfg = new Properties();
 
     public static Map<String, Object> extractKeyValueProperties(String customPropertiesStr) {
         Map<String, Object> customProperties = new HashMap<>();
@@ -120,6 +126,65 @@ public class PluginUtils {
             throw new IllegalStateException("Invalid classpath scope: " + classpathScope);
         }
 
+    }
+
+
+    public static void appendMetadataFromClass(Class<?> aClass, BenchmarkReport benchmarkReport) {
+        CyBenchMetadataList annotation = aClass.getDeclaredAnnotation(CyBenchMetadataList.class);
+        if (annotation != null) {
+            Arrays.stream(annotation.value()).forEach(annot -> {
+                checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
+                benchmarkReport.addMetadata(annot.key(), annot.value());
+            });
+        }
+        BenchmarkMetaData singleAnnotation = aClass.getDeclaredAnnotation(BenchmarkMetaData.class);
+        if (singleAnnotation != null) {
+            checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
+            benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
+        }
+    }
+
+    public static void appendMetadataFromMethod(Optional<Method> benchmarkMethod, BenchmarkReport benchmarkReport) {
+        CyBenchMetadataList annotation = benchmarkMethod.get().getDeclaredAnnotation(CyBenchMetadataList.class);
+        if (annotation != null) {
+            Arrays.stream(annotation.value()).forEach(annot -> {
+                checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
+                benchmarkReport.addMetadata(annot.key(), annot.value());
+            });
+        }
+        BenchmarkMetaData singleAnnotation = benchmarkMethod.get().getDeclaredAnnotation(BenchmarkMetaData.class);
+        if (singleAnnotation != null) {
+            checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
+            benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
+
+        }
+    }
+
+    private static void checkSetOldMetadataProps(String key,String value, BenchmarkReport benchmarkReport){
+        if(key.equals("api")){
+            benchmarkReport.setCategory(value);
+        }
+        if(key.equals("context")){
+            benchmarkReport.setContext(value);
+        }
+        if(key.equals("version")){
+            benchmarkReport.setVersion(value);
+        }
+    }
+
+    public static void getReportUploadStatus(BenchmarkOverviewReport report) {
+        String reportUploadStatus = getProperty(Constants.REPORT_UPLOAD_STATUS);
+        if (Constants.REPORT_PUBLIC.equals(reportUploadStatus)) {
+            report.setUploadStatus(reportUploadStatus);
+        } else if (Constants.REPORT_PRIVATE.equals(reportUploadStatus)) {
+            report.setUploadStatus(reportUploadStatus);
+        } else {
+            report.setUploadStatus(Constants.REPORT_PUBLIC);
+        }
+    }
+
+    public static String getProperty(String key) {
+        return System.getProperty(key, cfg.getProperty(key));
     }
 
 }
