@@ -53,6 +53,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.text.MessageFormat;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -105,7 +106,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean useCyBenchBenchmarkSettings =true;
 
     public void execute() throws MojoExecutionException {
-//        getLog().info("_______________________ "+System.getProperty("skipCybench")+" __________________________");
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
             boolean isReportSentSuccessFully = false;
@@ -121,10 +121,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("Collecting JVM properties...");
                 JVMProperties jvmProperties = CollectSystemInformation.getJavaVirtualMachineProperties();
 
-                //FIXME generate security hashes for report classes found on the classpath
                 SecurityBuilder securityBuilder = new SecurityBuilder();
 
-                Map<String, Object> benchmarkSettings = new HashMap<>();
+                Map<String, Object> benchmarkSettings = new HashMap<String, Object>();
 
                 Map<String, Map<String, String>> customBenchmarksMetadata = ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata);
 
@@ -170,9 +169,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 Runner runner = new Runner(opt);
 
-                Map<String, String> generatedFingerprints = new HashMap<>();
-                Map<String, String> manualFingerprints = new HashMap<>();
-                Map<String, String> classFingerprints = new HashMap<>();
+                Map<String, String> generatedFingerprints = new HashMap<String, String>();
+                Map<String, String> manualFingerprints = new HashMap<String, String>();
+                Map<String, String> classFingerprints = new HashMap<String, String>();
 
                 List<String> benchmarkNames = JMHUtils.getAllBenchmarkClasses();
                 for (String benchmarkClass : benchmarkNames) {
@@ -208,24 +207,39 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                         benchmarkReport.setClassFingerprint(classFingerprints.get(name));
                         benchmarkReport.setGeneratedFingerprint(generatedFingerprints.get(name));
                         benchmarkReport.setManualFingerprint(manualFingerprints.get(name));
+                        try {
+                            JMHUtils.ClassAndMethod classAndMethod = new JMHUtils.ClassAndMethod(name).invoke();
+                            String clazz = classAndMethod.getClazz();
+                            String method = classAndMethod.getMethod();
+                            getLog().info("Adding metadata for benchamrk: " + clazz + " test: " + method);
+                            Class<?> aClass = Class.forName(clazz);
+                            Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
+                            PluginUtils.appendMetadataFromMethod(benchmarkMethod, benchmarkReport);
+                            PluginUtils.appendMetadataFromClass(aClass, benchmarkReport);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
 
                     });
                 }
-
+                List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
+                report.getBenchmarks().remove("CUSTOM");
+                for(BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
+                    report.addToBenchmarks(benchReport);
+                }
+                report.computeScores();
+                PluginUtils.getReportUploadStatus(report);
                 getLog().info("-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
                 getLog().info("-----------------------------------------------------------------------------------------");
-                String reportJSON = JSONUtils.marshalToPrettyJson(report);
-                getLog().info(reportJSON);
-                if (expectedScore > 0) {
-                    if (report.getTotalScore().doubleValue() < expectedScore) {
+
+                if (expectedScore > 0 && report.getTotalScore().doubleValue() < expectedScore) {
                         throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
                     }
-                }
 
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder, report);
-
-                String responseWithUrl = null;
+                reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
+                String responseWithUrl;
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
                     report.setReportURL(responseWithUrl);
@@ -235,7 +249,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
-
+                String reportJSON = JSONUtils.marshalToPrettyJson(report);
+                getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
                     getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)) + "'");
                     IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)), reportJSON);
@@ -255,7 +270,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     throw new MojoExecutionException("Error during benchmarks run", t);
                 }
             }
-            if (isReportSentSuccessFully == false && shouldSendReportToCyBench == true && shouldFailBuildOnReportDeliveryFailure == true) {
+            if (!isReportSentSuccessFully && shouldSendReportToCyBench && shouldFailBuildOnReportDeliveryFailure) {
                 throw new MojoExecutionException("Error during benchmarks run, report was not sent to CyBench as configured!");
             }
             getLog().info("-----------------------------------------------------------------------------------------");
