@@ -52,6 +52,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -134,6 +135,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 benchmarkSettings.put("benchMeasurementSeconds", measurementTime);
                 benchmarkSettings.put("benchForkCount", forks);
                 benchmarkSettings.put("benchThreadCount", threads);
+
+                reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(),  project.getArtifactId(), project.getVersion());
+
                 benchmarkSettings.put("benchReportName", reportName);
 
                 getLog().info("Executing benchmarks...");
