@@ -48,12 +48,13 @@ import org.openjdk.jmh.profile.HotspotThreadProfiler;
 import org.openjdk.jmh.profile.SafepointsProfiler;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-import java.text.MessageFormat;
 import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -90,8 +91,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean shouldStoreReportToFileSystem = true;
     @Parameter(property = "cybench.reportUploadStatus", defaultValue = "public")
     private String reportUploadStatus = "public";
-    @Parameter(property = "cybench.reportsFolder", defaultValue = "")
-    private String reportsFolder = "";
+    @Parameter(property = "cybench.reportsFolder", defaultValue = "./reports")
+    private String reportsFolder = "./reports";
     @Parameter(property = "cybench.reportName", defaultValue = "CyBench Report")
     private String reportName = "CyBench Report";
     @Parameter(property = "cybench.customBenchmarkMetadata", defaultValue = "")
@@ -103,7 +104,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.shouldFailBuildOnReportDeliveryFailure", defaultValue = "false")
     private boolean shouldFailBuildOnReportDeliveryFailure = false;
     @Parameter(property = "cybench.useCyBenchBenchmarkSettings", defaultValue = "true")
-    private boolean useCyBenchBenchmarkSettings =true;
+    private boolean useCyBenchBenchmarkSettings = true;
+    @Parameter(property = "cybench.jvmArgs", defaultValue = "")
+    private String jmvArgs = "";
 
     public void execute() throws MojoExecutionException {
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
@@ -135,7 +138,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 benchmarkSettings.put("benchForkCount", forks);
                 benchmarkSettings.put("benchThreadCount", threads);
 
-                reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(),  project.getArtifactId(), project.getVersion());
+                reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(), project.getArtifactId(), project.getVersion());
 
                 benchmarkSettings.put("benchReportName", reportName);
 
@@ -143,8 +146,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 OptionsBuilder optBuild = new OptionsBuilder();
                 Options opt;
-                if(useCyBenchBenchmarkSettings) {
-                    opt = optBuild.forks(forks)
+                if (useCyBenchBenchmarkSettings) {
+                    ChainedOptionsBuilder chainedOptionsBuilder = optBuild.forks(forks)
                             .measurementTime(TimeValue.seconds(measurementTime))
                             .measurementIterations(measurementIterations)
                             .warmupIterations(warmUpIterations)
@@ -154,10 +157,14 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             .addProfiler(GCProfiler.class)
                             .addProfiler(HotspotThreadProfiler.class)
                             .addProfiler(HotspotRuntimeProfiler.class)
-                            .addProfiler(SafepointsProfiler.class)
-                            .detectJvmArgs()
-                            .build();
-                }else{
+                            .addProfiler(SafepointsProfiler.class);
+                    if (jmvArgs.length() > 0) {
+                        chainedOptionsBuilder.jvmArgs(jmvArgs);
+                    } else {
+                        chainedOptionsBuilder.detectJvmArgs();
+                    }
+                    opt = chainedOptionsBuilder.build();
+                } else {
                     opt = optBuild.shouldDoGC(true)
                             .addProfiler(GCProfiler.class)
                             .addProfiler(HotspotThreadProfiler.class)
@@ -198,7 +205,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.setBenchmarkSettings(benchmarkSettings);
 
 
-                Iterator<String> it = report.getBenchmarks().keySet().iterator() ;
+                Iterator<String> it = report.getBenchmarks().keySet().iterator();
 
                 while (it.hasNext()) {
                     List<BenchmarkReport> custom = report.getBenchmarks().get(it.next()).stream().collect(Collectors.toList());
@@ -224,7 +231,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 }
                 List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
                 report.getBenchmarks().remove("CUSTOM");
-                for(BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
+                for (BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
                     report.addToBenchmarks(benchReport);
                 }
                 report.computeScores();
@@ -234,8 +241,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("-----------------------------------------------------------------------------------------");
 
                 if (expectedScore > 0 && report.getTotalScore().doubleValue() < expectedScore) {
-                        throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
-                    }
+                    throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue() + " < " + expectedScore);
+                }
 
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder, report);
                 reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
@@ -252,10 +259,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
                 getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
-                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false)), reportJSON);
-                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), true)) + "'");
-                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), true)), reportEncrypted);
+                    String fileNameForReport = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false);
+                    String fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), true);
+
+                    getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReport), reportJSON);
+                    getLog().info("Saving encrypted test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted) + "'");
+                    IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted), reportEncrypted);
                 }
                 getLog().info("Removing all temporary auto-generated files....");
                 IOUtils.removeTestDataFiles();
