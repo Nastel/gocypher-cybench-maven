@@ -108,6 +108,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.jvmArgs", defaultValue = "")
     private String jmvArgs = "";
 
+    @Parameter(property = "cybench.reportUploadToken", defaultValue = "")
+    private String reportUploadToken = "";
+
     public void execute() throws MojoExecutionException {
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
@@ -138,8 +141,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 benchmarkSettings.put("benchForkCount", forks);
                 benchmarkSettings.put("benchThreadCount", threads);
 
-                reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(), project.getArtifactId(), project.getVersion());
-
+                if(reportName == null || reportName.equals("")) {
+                    reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(), project.getArtifactId(), project.getVersion());
+                }
                 benchmarkSettings.put("benchReportName", reportName);
 
                 getLog().info("Executing benchmarks...");
@@ -248,8 +252,19 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
                 String responseWithUrl;
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
-                    responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted);
-                    report.setReportURL(responseWithUrl);
+                    responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, reportUploadToken);
+
+                    String deviceReports = JSONUtils.parseJsonIntoMap(responseWithUrl).get(Constants.REPORT_USER_URL).toString();
+                    String resultURL = JSONUtils.parseJsonIntoMap(responseWithUrl).get(Constants.REPORT_URL).toString();
+                    getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
+                    getLog().info("You can find all device benchmarks on " + deviceReports);
+                    getLog().info("Your report is available at " + resultURL);
+                    getLog().info("NOTE: It may take a few minutes for your report to appear online");
+
+
+                    report.setDeviceReportsURL(deviceReports);
+                    report.setReportURL(resultURL);
+
                     if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
                         isReportSentSuccessFully = true;
                     }
@@ -259,8 +274,10 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
                 getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
-                    String fileNameForReport = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false);
-                    String fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), true);
+                    String fileNameForReport = "";
+                    String fileNameForReportEncrypted = "";
+                    fileNameForReport = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), false);
+                    fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName, start, report.getTotalScore(), true);
 
                     getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport) + "'");
                     IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReport), reportJSON);
