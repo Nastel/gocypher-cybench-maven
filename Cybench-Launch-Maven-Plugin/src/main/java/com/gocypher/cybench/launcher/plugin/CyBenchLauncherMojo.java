@@ -250,27 +250,31 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder, report);
                 reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
-                String responseWithUrl;
+                String responseWithUrl = null;
+                String deviceReports = null;
+                String resultURL = null;
+                Map<?, ?> response = new HashMap<>();
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, benchAccessToken);
-
-                    String deviceReports = JSONUtils.parseJsonIntoMap(responseWithUrl).get(Constants.REPORT_USER_URL).toString();
-                    String resultURL = JSONUtils.parseJsonIntoMap(responseWithUrl).get(Constants.REPORT_URL).toString();
-                    getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
-                    getLog().info("You can find all device benchmarks on " + deviceReports);
-                    getLog().info("Your report is available at " + resultURL);
-                    getLog().info("NOTE: It may take a few minutes for your report to appear online");
-
-
-                    report.setDeviceReportsURL(deviceReports);
-                    report.setReportURL(resultURL);
-
-                    if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
-                        isReportSentSuccessFully = true;
+                    response = (Map<String, Object>) JSONUtils.parseJsonIntoMap(responseWithUrl);
+                    if(!response.containsKey("ERROR")) {
+                        if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
+                            if(response.get(Constants.FOUND_TOKEN_REPOSITORIES) != null) {
+                                deviceReports = response.get(Constants.REPORT_USER_URL).toString() + response.get(Constants.FOUND_TOKEN_REPOSITORIES).toString();
+                                resultURL = response.get(Constants.REPORT_URL).toString() + response.get(Constants.FOUND_TOKEN_REPOSITORIES).toString();
+                            }else{
+                                deviceReports = response.get(Constants.REPORT_USER_URL).toString() ;
+                                resultURL = response.get(Constants.REPORT_URL).toString();
+                            }
+                            isReportSentSuccessFully = true;
+                            report.setDeviceReportsURL(deviceReports);
+                            report.setReportURL(resultURL);
+                        }
                     }
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
                 }
+
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
                 getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
@@ -288,7 +292,15 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 IOUtils.removeTestDataFiles();
                 getLog().info("Removed all temporary auto-generated files!!!");
 
-
+                if(!response.containsKey("ERROR") && responseWithUrl != null && !responseWithUrl.isEmpty()) {
+                    getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
+                    getLog().info("You can find all device benchmarks on " + deviceReports);
+                    getLog().info("Your report is available at " + resultURL);
+                    getLog().info("NOTE: It may take a few minutes for your report to appear online");
+                }else{
+                    getLog().info((String) response.get("ERROR"));
+                    getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
+                }
             } catch (Throwable t) {
                 getLog().error(t);
                 if (t.getMessage() != null && t.getMessage().contains("/META-INF/BenchmarkList")) {
