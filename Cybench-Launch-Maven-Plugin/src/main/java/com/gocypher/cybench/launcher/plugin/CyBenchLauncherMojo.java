@@ -256,20 +256,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 Map<?, ?> response = new HashMap<>();
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, benchAccessToken);
-                    response = (Map<String, Object>) JSONUtils.parseJsonIntoMap(responseWithUrl);
-                    if(!response.containsKey("ERROR")) {
-                        if (responseWithUrl != null && !responseWithUrl.isEmpty()) {
-                            if(response.get(Constants.FOUND_TOKEN_REPOSITORIES) != null) {
-                                deviceReports = response.get(Constants.REPORT_USER_URL).toString() + response.get(Constants.FOUND_TOKEN_REPOSITORIES).toString();
-                                resultURL = response.get(Constants.REPORT_URL).toString() + response.get(Constants.FOUND_TOKEN_REPOSITORIES).toString();
-                            }else{
-                                deviceReports = response.get(Constants.REPORT_USER_URL).toString() ;
-                                resultURL = response.get(Constants.REPORT_URL).toString();
-                            }
+                    response = JSONUtils.parseJsonIntoMap(responseWithUrl);
+                    if(!response.containsKey("ERROR") && responseWithUrl != null && !responseWithUrl.isEmpty()) {
+                            deviceReports = response.get(Constants.REPORT_USER_URL).toString() ;
+                            resultURL = response.get(Constants.REPORT_URL).toString();
                             isReportSentSuccessFully = true;
                             report.setDeviceReportsURL(deviceReports);
                             report.setReportURL(resultURL);
-                        }
                     }
                 } else {
                     getLog().info("You may submit your report '" + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at " + Constants.CYB_UPLOAD_URL);
