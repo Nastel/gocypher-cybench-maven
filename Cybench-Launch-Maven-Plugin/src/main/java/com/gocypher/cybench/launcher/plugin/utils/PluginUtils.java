@@ -187,12 +187,5 @@ public class PluginUtils {
         return System.getProperty(key, cfg.getProperty(key));
     }
 
-    public static String getRequestHeader(String token, String email){
-        if(email != null && !email.equals("")){
-            return token + ":"+ email;
-        }else{
-            return token;
-        }
-    }
 }
 

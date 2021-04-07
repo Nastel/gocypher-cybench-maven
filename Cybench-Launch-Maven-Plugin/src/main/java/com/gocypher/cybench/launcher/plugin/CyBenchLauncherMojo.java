@@ -258,7 +258,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String resultURL = null;
                 Map<?, ?> response = new HashMap<>();
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
-                    String tokenAndEmail = PluginUtils.getRequestHeader(benchAccessToken, email);
+                    String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
 
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, tokenAndEmail);
                     response = JSONUtils.parseJsonIntoMap(responseWithUrl);
