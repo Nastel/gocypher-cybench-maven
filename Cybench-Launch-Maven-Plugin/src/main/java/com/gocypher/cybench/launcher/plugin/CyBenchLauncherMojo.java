@@ -111,6 +111,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.benchAccessToken", defaultValue = "")
     private String benchAccessToken = "";
 
+    @Parameter(property = "cybench.email", defaultValue = "")
+    private String email = "";
+
     public void execute() throws MojoExecutionException {
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
@@ -255,7 +258,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String resultURL = null;
                 Map<?, ?> response = new HashMap<>();
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
-                    responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, benchAccessToken);
+                    String tokenAndEmail = PluginUtils.getRequestHeader(benchAccessToken, email);
+
+                    responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted, tokenAndEmail);
                     response = JSONUtils.parseJsonIntoMap(responseWithUrl);
                     if(!response.containsKey("ERROR") && responseWithUrl != null && !responseWithUrl.isEmpty()) {
                             deviceReports = response.get(Constants.REPORT_USER_URL).toString() ;
