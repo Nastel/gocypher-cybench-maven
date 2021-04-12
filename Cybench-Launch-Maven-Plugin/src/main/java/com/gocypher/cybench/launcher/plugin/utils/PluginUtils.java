@@ -130,8 +130,8 @@ public class PluginUtils {
 
     /**
      *  Resolve and add class annotation to report
-     * @param aClass
-     * @param benchmarkReport
+     * @param aClass benchmark classes objects
+     * @param benchmarkReport report data object
      */
     public static void appendMetadataFromClass(Class<?> aClass, BenchmarkReport benchmarkReport) {
         CyBenchMetadataList annotation = aClass.getDeclaredAnnotation(CyBenchMetadataList.class);
@@ -150,8 +150,8 @@ public class PluginUtils {
 
     /**
      *  Resolve and add method annotation to report
-     * @param benchmarkMethod
-     * @param benchmarkReport
+     * @param benchmarkMethod benchmark method objects
+     * @param benchmarkReport report data object
      */
     public static void appendMetadataFromMethod(Optional<Method> benchmarkMethod, BenchmarkReport benchmarkReport) {
         CyBenchMetadataList annotation = benchmarkMethod.get().getDeclaredAnnotation(CyBenchMetadataList.class);
@@ -172,9 +172,9 @@ public class PluginUtils {
     /**
      *  A method needed in order to support the previous data model. Setting the needed values from annotation to a
      *  previously defined data model value
-     * @param key
-     * @param value
-     * @param benchmarkReport
+     * @param key property key
+     * @param value value to set for the key found
+     * @param benchmarkReport report data object
      */
     private static void checkSetOldMetadataProps(String key,String value, BenchmarkReport benchmarkReport){
         if(key.equals("api")){

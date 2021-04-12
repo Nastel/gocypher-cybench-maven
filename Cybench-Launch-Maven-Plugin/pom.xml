@@ -26,7 +26,7 @@
   <name>GoCypher CyBench Launch Maven Plugin</name>
 
   <url>https://github.com/K2NIO/gocypher-cybench-maven</url>
-  <description>JMH benchmarking wrapper</description>
+  <description>Maven plugin designed to execute JMH benchmarks, collect results, add environment properties , build report and store it into external repository for further analysis.</description>
   <licenses>
     <license>
       <name>GNU Lesser General Public License v2.1</name>
@@ -34,15 +34,15 @@
     </license>
   </licenses>
   <organization>
-    <name>jKool, LLC</name>
-    <url>https://www.jkoolcloud.com/</url>
+    <name>K2N.IO</name>
+    <url>https://cybench.io</url>
   </organization>
   <developers>
     <developer>
       <name>CyBench Team</name>
-      <email>support@jkoolcloud.com</email>
-      <organization>jKool</organization>
-      <organizationUrl>http://www.jkoolcloud.com</organizationUrl>
+      <email>info@cybench.io</email>
+      <organization>K2N.IO</organization>
+      <organizationUrl>https://cybench.io</organizationUrl>
     </developer>
   </developers>
   <scm>
@@ -54,18 +54,12 @@
   <distributionManagement>
     <repository>
       <id>oss.sonatype.org</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
     <snapshotRepository>
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>oss.sonatype.org</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
-    <!--        <snapshotRepository>-->
-    <!--            <id>github</id>-->
-    <!--            <name>GitHub Nastel Apache Maven Packages</name>-->
-    <!--            <url>https://maven.pkg.github.com/Nastel/TNT4J</url>-->
-    <!--        </snapshotRepository>-->
   </distributionManagement>
 
   <properties>
@@ -112,6 +106,7 @@
             <artifactId>maven-shade-plugin</artifactId>
             <version>3.2.1</version>
             <configuration>
+              <minimizeJar>true</minimizeJar>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -217,7 +212,7 @@
             <extensions>true</extensions>
             <configuration>
               <serverId>oss.sonatype.org</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
               <!--<description>${project.version}</description>-->
               <autoReleaseAfterClose>true</autoReleaseAfterClose>
             </configuration>
