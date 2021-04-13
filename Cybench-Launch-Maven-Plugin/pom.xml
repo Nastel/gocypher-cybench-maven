@@ -22,7 +22,7 @@
   <groupId>com.gocypher.cybench.launcher.plugin</groupId>
   <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>0.1-beta</version>
+  <version>1.0.0</version>
   <name>GoCypher CyBench Launch Maven Plugin</name>
 
   <url>https://github.com/K2NIO/gocypher-cybench-maven</url>
@@ -76,9 +76,15 @@
     <product.copyright.html>
       <![CDATA[<font size="-1">Copyright &#169; 2014-2020 ${project.organization.name}. All Rights Reserved.</font>]]></product.copyright.html>
     <version.plugin.gpg>1.6</version.plugin.gpg>
+    <gpg.skip>true</gpg.skip>
   </properties>
-
   <profiles>
+    <profile>
+      <id>maven-release</id>
+      <properties>
+        <gpg.skip>false</gpg.skip>
+      </properties>
+    </profile>
     <profile>
       <id>shade</id>
       <build>
@@ -106,7 +112,6 @@
             <artifactId>maven-shade-plugin</artifactId>
             <version>3.2.1</version>
             <configuration>
-              <minimizeJar>true</minimizeJar>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -200,7 +205,15 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>${version.plugin.gpg}</version>
+            <version>1.6</version>
+            <configuration>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+              <keyname>${gpg.keyname}</keyname>
+              <passphraseServerId>${gpg.keyname}</passphraseServerId>
+            </configuration>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
