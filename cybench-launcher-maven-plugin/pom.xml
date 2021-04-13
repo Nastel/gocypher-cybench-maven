@@ -97,26 +97,6 @@
                             <encoding>${project.build.sourceEncoding}</encoding>
                         </configuration>
                     </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.3.0</version>
-                        <executions>
-                            <execution>
-                                <id>assemble</id>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <phase>package</phase>
-                                <configuration>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <outputDirectory>${release.deploy.dir}</outputDirectory>
-                                    <descriptors>
-                                        <descriptor>/src/assembleRelease.xml</descriptor>
-                                    </descriptors>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <!-- Attach source jars-->
                     <plugin>
                         <artifactId>maven-source-plugin</artifactId>
