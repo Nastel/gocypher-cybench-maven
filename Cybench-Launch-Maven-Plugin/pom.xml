@@ -22,11 +22,12 @@
   <groupId>com.gocypher.cybench.launcher.plugin</groupId>
   <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <name>GoCypher CyBench Launch Maven Plugin</name>
 
   <url>https://github.com/K2NIO/gocypher-cybench-maven</url>
-  <description>Maven plugin designed to execute JMH benchmarks, collect results, add environment properties , build report and store it into external repository for further analysis.</description>
+  <description>Maven plugin designed to execute JMH benchmarks, collect results, add environment properties , build
+      report and store it into external repository for further analysis.</description>
   <licenses>
     <license>
       <name>GNU Lesser General Public License v2.1</name>
@@ -63,19 +64,22 @@
   </distributionManagement>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.resources.encoding>UTF-8</project.resources.encoding>
     <jmh.version>1.26</jmh.version>
     <javac.target>1.8</javac.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jackson.version>2.11.2</jackson.version>
     <org.slf4j.version>1.7.30</org.slf4j.version>
     <uberjar.name>gocypher-cybench-launch-maven-plugin-${project.version}</uberjar.name>
     <release.deploy.dir>./release</release.deploy.dir>
     <version.plugin.source>3.2.1</version.plugin.source>
     <version.plugin.javadoc>3.0.1</version.plugin.javadoc>
+    <version.plugin.gpg>1.6</version.plugin.gpg>
     <product.name.hr>CyBench-client</product.name.hr>
     <product.copyright.html>
-      <![CDATA[<font size="-1">Copyright &#169; 2014-2020 ${project.organization.name}. All Rights Reserved.</font>]]></product.copyright.html>
-    <version.plugin.gpg>1.6</version.plugin.gpg>
+      <![CDATA[<font size="-1">Copyright &#169; 2014-2020 ${project.organization.name}. All Rights Reserved.</font>]]>
+    </product.copyright.html>
     <gpg.skip>true</gpg.skip>
   </properties>
   <profiles>
@@ -84,57 +88,15 @@
       <properties>
         <gpg.skip>false</gpg.skip>
       </properties>
-    </profile>
-    <profile>
-      <id>shade</id>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.8.0</version>
-            <configuration>
-              <compilerVersion>${javac.target}</compilerVersion>
-              <source>${javac.target}</source>
-              <target>${javac.target}</target>
-            </configuration>
-          </plugin>
-          <plugin>
+           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
             <version>3.2.0</version>
             <configuration>
               <encoding>${project.build.sourceEncoding}</encoding>
             </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.2.1</version>
-            <configuration>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>module-info.class</exclude>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-            </configuration>
-            <executions>
-              <execution>
-                <phase>package</phase>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <finalName>${uberjar.name}</finalName>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
@@ -205,7 +167,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
+            <version>${version.plugin.gpg}</version>
             <configuration>
               <gpgArguments>
                 <arg>--pinentry-mode</arg>
@@ -232,8 +194,7 @@
             <configuration>
               <serverId>oss.sonatype.org</serverId>
               <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-              <!--<description>${project.version}</description>-->
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              <autoReleaseAfterClose>false</autoReleaseAfterClose>
             </configuration>
             <executions>
               <execution>
@@ -241,7 +202,6 @@
                 <phase>deploy</phase>
                 <goals>
                   <goal>deploy</goal>
-                  <!--<goal>release</goal>-->
                 </goals>
               </execution>
             </executions>
@@ -337,6 +297,7 @@
       </exclusions>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
