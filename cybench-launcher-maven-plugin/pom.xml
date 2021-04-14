@@ -142,7 +142,7 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!-- Sign artifacts for uploading to maven central -->
+                    <!-- Sign artifacts for uploading to Maven Central Repo -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
