@@ -1,6 +1,6 @@
 # GoCypher CyBench Maven plugin
 
-[CyBench](https://www.gocypher.com/cybench/)  Maven plugin allows to run CyBench benchmark tests, generate report and send it to CyBench during software build process. 
+[CyBench](https://cybench.io)  Maven plugin allows to run CyBench benchmark tests, generate report and send it to CyBench during software build process. 
 
 Plugin is simply attached to project POM file and also can be used in continuous integration (CI) systems. 
 
