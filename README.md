@@ -139,7 +139,7 @@ This step is required in order to use latest CyBench Maven plugin versions durin
 #### Build  gocypher-cybench-launch-maven-plugin project
 
 * Clone [GitHub repository](https://github.com/K2NIO/gocypher-cybench-maven) to local machine.
-* Navigate to directory `Cybench-Launch-Maven-Plugin`.
+* Navigate to directory `cybench-launch-maven-plugin`.
 * Run command from the command line 
 ```sh
      mvn clean install
