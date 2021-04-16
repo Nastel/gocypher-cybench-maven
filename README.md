@@ -111,7 +111,7 @@ Include dependency to annotation processor in your project `pom.xml` file before
 ```
 
 ## More information on benchmarking your code
-* [CyBench Benchmark samples](https://github.com/K2NIO/gocypher-cybench-java-core/tree/main/gocypher-cybench-jvm/src/main/java/com/gocypher/cybench/jmh/jvm/client/tests)
+* [CyBench Benchmark samples](https://github.com/K2NIO/cybench-java-benchmarks)
 * [Avoiding Benchmarking Pitfalls on the JVM](https://www.oracle.com/technical-resources/articles/java/architect-benchmarking.html#:~:text=JMH%20is%20a%20Java%20harness,to%20unwanted%20virtual%20machine%20optimizations)
 * [JMH - Java Microbenchmark Harness](http://tutorials.jenkov.com/java-performance/jmh.html)
 * [Java Benchmarks with JMH](https://medium.com/swlh/java-benchmarks-with-jmh-a-preamble-285510a77dd2)
