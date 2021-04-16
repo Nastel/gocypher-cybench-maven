@@ -43,8 +43,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.openjdk.jmh.profile.GCProfiler;
-import org.openjdk.jmh.profile.HotspotRuntimeProfiler;
-import org.openjdk.jmh.profile.HotspotThreadProfiler;
 import org.openjdk.jmh.profile.SafepointsProfiler;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
@@ -162,8 +160,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             .threads(threads)
                             .shouldDoGC(true)
                             .addProfiler(GCProfiler.class)
-                            .addProfiler(HotspotThreadProfiler.class)
-                            .addProfiler(HotspotRuntimeProfiler.class)
+                            //.addProfiler(HotspotThreadProfiler.class)  //obsolete
+                            //.addProfiler(HotspotRuntimeProfiler.class)  //obsolete
                             .addProfiler(SafepointsProfiler.class);
                     if (jmvArgs.length() > 0) {
                         chainedOptionsBuilder.jvmArgs(jmvArgs);
@@ -174,8 +172,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 } else {
                     opt = optBuild.shouldDoGC(true)
                             .addProfiler(GCProfiler.class)
-                            .addProfiler(HotspotThreadProfiler.class)
-                            .addProfiler(HotspotRuntimeProfiler.class)
+                            //.addProfiler(HotspotThreadProfiler.class)  //obsolete
+                            //.addProfiler(HotspotRuntimeProfiler.class)  //obsolete
                             .addProfiler(SafepointsProfiler.class)
                             .detectJvmArgs()
                             .build();
