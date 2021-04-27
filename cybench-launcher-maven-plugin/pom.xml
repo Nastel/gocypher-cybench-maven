@@ -80,6 +80,19 @@
         <gpg.skip>true</gpg.skip>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org-snapshot</id>
+            <url>http://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <profiles>
         <profile>
             <id>maven-release</id>
