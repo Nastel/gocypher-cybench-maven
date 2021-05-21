@@ -45,6 +45,7 @@ import com.gocypher.cybench.core.utils.IOUtils;
 import com.gocypher.cybench.core.utils.JMHUtils;
 import com.gocypher.cybench.core.utils.JSONUtils;
 import com.gocypher.cybench.core.utils.SecurityUtils;
+import com.gocypher.cybench.launcher.BenchmarkRunner;
 import com.gocypher.cybench.launcher.environment.model.HardwareProperties;
 import com.gocypher.cybench.launcher.environment.model.JVMProperties;
 import com.gocypher.cybench.launcher.environment.services.CollectSystemInformation;
@@ -204,7 +205,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.getEnvironmentSettings().put("unclassifiedProperties",
                         CollectSystemInformation.getUnclassifiedProperties());
                 report.getEnvironmentSettings().put("userDefinedProperties",
-                        PluginUtils.extractKeyValueProperties(userProperties));
+                        ComputationUtils.customUserDefinedProperties(userProperties));
                 report.setBenchmarkSettings(benchmarkSettings);
 
                 for (String s : report.getBenchmarks().keySet()) {
@@ -221,8 +222,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             getLog().info("Adding metadata for benchmark: " + clazz + " test: " + method);
                             Class<?> aClass = Class.forName(clazz);
                             Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
-                            PluginUtils.appendMetadataFromAnnotated(benchmarkMethod, benchmarkReport);
-                            PluginUtils.appendMetadataFromAnnotated(Optional.of(aClass), benchmarkReport);
+                            BenchmarkRunner.appendMetadataFromAnnotated(benchmarkMethod, benchmarkReport);
+                            BenchmarkRunner.appendMetadataFromAnnotated(Optional.of(aClass), benchmarkReport);
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
@@ -235,7 +236,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     report.addToBenchmarks(benchReport);
                 }
                 report.computeScores();
-                PluginUtils.getReportUploadStatus(report);
+                BenchmarkRunner.getReportUploadStatus(report);
                 getLog().info(
                         "-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());

@@ -19,7 +19,6 @@
 package com.gocypher.cybench.launcher.plugin.utils;
 
 import java.io.File;
-import java.lang.reflect.AnnotatedElement;
 import java.util.*;
 
 import org.apache.maven.artifact.Artifact;
@@ -29,13 +28,7 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.openjdk.jmh.util.Utils;
 
-import com.gocypher.cybench.core.annotation.BenchmarkMetaData;
-import com.gocypher.cybench.core.annotation.CyBenchMetadataList;
-import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
-import com.gocypher.cybench.launcher.model.BenchmarkReport;
-import com.gocypher.cybench.launcher.utils.Constants;
-
-public class PluginUtils {
+public final class PluginUtils {
 
     private static final String SCOPE_COMPILE = "compile";
     private static final String SCOPE_TEST = "test";
@@ -43,20 +36,8 @@ public class PluginUtils {
     private static final String SCOPE_SYSTEM = "system";
     public static final String KEY_SKIP_CYBENCH = "skipCybench";
     public static final String KEY_SYSTEM_CLASSPATH = "java.class.path";
-    static Properties cfg = new Properties();
 
-    public static Map<String, Object> extractKeyValueProperties(String customPropertiesStr) {
-        Map<String, Object> customProperties = new HashMap<>();
-        if (customPropertiesStr != null && !customPropertiesStr.isEmpty()) {
-            String[] pairs = customPropertiesStr.split(";");
-            for (String pair : pairs) {
-                String[] kv = pair.split("=");
-                if (kv.length == 2) {
-                    customProperties.put(kv[0], kv[1]);
-                }
-            }
-        }
-        return customProperties;
+    private PluginUtils() {
     }
 
     public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map<String, ?> pluginContext,
@@ -133,71 +114,5 @@ public class PluginUtils {
         } else {
             throw new IllegalStateException("Invalid classpath scope: " + classpathScope);
         }
-
     }
-
-    /**
-     * Resolve and add benchmark annotation to report
-     * 
-     * @param annotated
-     *            benchmark annotated objects
-     * @param benchmarkReport
-     *            report data object
-     */
-    public static void appendMetadataFromAnnotated(Optional<? extends AnnotatedElement> annotated,
-            BenchmarkReport benchmarkReport) {
-        if (annotated.isPresent()) {
-            CyBenchMetadataList annotation = annotated.get().getDeclaredAnnotation(CyBenchMetadataList.class);
-            if (annotation != null) {
-                Arrays.stream(annotation.value()).forEach(annot -> {
-                    checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
-                    benchmarkReport.addMetadata(annot.key(), annot.value());
-                });
-            }
-            BenchmarkMetaData singleAnnotation = annotated.get().getDeclaredAnnotation(BenchmarkMetaData.class);
-            if (singleAnnotation != null) {
-                checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
-                benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
-            }
-        }
-    }
-
-    /**
-     * A method needed in order to support the previous data model. Setting the needed values from annotation to a
-     * previously defined data model value
-     * 
-     * @param key
-     *            property key
-     * @param value
-     *            value to set for the key found
-     * @param benchmarkReport
-     *            report data object
-     */
-    private static void checkSetOldMetadataProps(String key, String value, BenchmarkReport benchmarkReport) {
-        if (key.equals("api")) {
-            benchmarkReport.setCategory(value);
-        }
-        if (key.equals("context")) {
-            benchmarkReport.setContext(value);
-        }
-        if (key.equals("version")) {
-            benchmarkReport.setVersion(value);
-        }
-    }
-
-    public static void getReportUploadStatus(BenchmarkOverviewReport report) {
-        String reportUploadStatus = getProperty(Constants.REPORT_UPLOAD_STATUS);
-        if (Constants.REPORT_PUBLIC.equals(reportUploadStatus)) {
-            report.setUploadStatus(reportUploadStatus);
-        } else if (Constants.REPORT_PRIVATE.equals(reportUploadStatus)) {
-            report.setUploadStatus(reportUploadStatus);
-        } else {
-            report.setUploadStatus(Constants.REPORT_PUBLIC);
-        }
-    }
-
-    public static String getProperty(String key) {
-        return System.getProperty(key, cfg.getProperty(key));
-    }
-
 }
