@@ -18,11 +18,10 @@
  */
 package com.gocypher.cybench.launcher.plugin.utils;
 
-import com.gocypher.cybench.core.annotation.BenchmarkMetaData;
-import com.gocypher.cybench.core.annotation.CyBenchMetadataList;
-import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
-import com.gocypher.cybench.launcher.model.BenchmarkReport;
-import com.gocypher.cybench.launcher.utils.Constants;
+import java.io.File;
+import java.lang.reflect.AnnotatedElement;
+import java.util.*;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.logging.Log;
@@ -30,9 +29,11 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.openjdk.jmh.util.Utils;
 
-import java.io.File;
-import java.lang.reflect.Method;
-import java.util.*;
+import com.gocypher.cybench.core.annotation.BenchmarkMetaData;
+import com.gocypher.cybench.core.annotation.CyBenchMetadataList;
+import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
+import com.gocypher.cybench.launcher.model.BenchmarkReport;
+import com.gocypher.cybench.launcher.utils.Constants;
 
 public class PluginUtils {
 
@@ -58,22 +59,27 @@ public class PluginUtils {
         return customProperties;
     }
 
-
-    public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map pluginContext, String classpathScope) throws Exception {
-        /*This part of code resolves project output directory and sets it Benchmarks classpath to plugin class realm that it can find benchmark classes*/
-        final File classes = new File(project.getBuild().getOutputDirectory());
-        final File classesTest = new File(project.getBuild().getTestOutputDirectory());
-        final PluginDescriptor pluginDescriptor = (PluginDescriptor) pluginContext.get("pluginDescriptor");
-        final ClassRealm classRealm = pluginDescriptor.getClassRealm();
+    public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map pluginContext,
+            String classpathScope) throws Exception {
+        /*
+         * This part of code resolves project output directory and sets it Benchmarks classpath to plugin class realm
+         * that it can find benchmark classes
+         */
+        File classes = new File(project.getBuild().getOutputDirectory());
+        File classesTest = new File(project.getBuild().getTestOutputDirectory());
+        PluginDescriptor pluginDescriptor = (PluginDescriptor) pluginContext.get("pluginDescriptor");
+        ClassRealm classRealm = pluginDescriptor.getClassRealm();
         classRealm.addURL(classes.toURI().toURL());
         classRealm.addURL(classesTest.toURI().toURL());
 
-        /*This part of code resolves libraries used in project and sets it to System classpath that JMH could use it.*/
-        List<Artifact> artifacts = new ArrayList<Artifact>();
-        List<File> theClasspathFiles = new ArrayList<File>();
+        /*
+         * This part of code resolves libraries used in project and sets it to System classpath that JMH could use it.
+         */
+        List<Artifact> artifacts = new ArrayList<>();
+        List<File> theClasspathFiles = new ArrayList<>();
         collectProjectArtifactsAndClasspathByScope(project, artifacts, theClasspathFiles, classpathScope);
         theClasspathFiles.add(new File(project.getBuild().getTestOutputDirectory()));
-        Set<String> classPaths = new HashSet<String>();
+        Set<String> classPaths = new HashSet<>();
         for (File f : theClasspathFiles) {
             classPaths.add(f.getAbsolutePath());
         }
@@ -92,24 +98,26 @@ public class PluginUtils {
                 }
             }
         }
-        /* This update of the classpath is required in order to successfully launch JMH forked JVM's correctly and avoid failures because of missing classpath libraries. JMH forked JVM's inherits System classpath.*/
+        /*
+         * This update of the classpath is required in order to successfully launch JMH forked JVM's correctly and avoid
+         * failures because of missing classpath libraries. JMH forked JVM's inherits System classpath.
+         */
         String finalClassPath = System.getProperty(KEY_SYSTEM_CLASSPATH) + tmpClasspath.toString();
         System.setProperty(KEY_SYSTEM_CLASSPATH, finalClassPath);
 
         log.info("Benchmarks classpath:" + System.getProperty(KEY_SYSTEM_CLASSPATH));
 
     }
-    public static String checkReportSaveLocation(String fileName){
-        if(!fileName.endsWith("/")){
-            fileName = fileName +"/";
+
+    public static String checkReportSaveLocation(String fileName) {
+        if (!fileName.endsWith("/")) {
+            fileName = fileName + "/";
         }
         return fileName;
     }
 
-    private static void collectProjectArtifactsAndClasspathByScope(MavenProject project,
-                                                                   List<Artifact> artifacts,
-                                                                   List<File> theClasspathFiles,
-                                                                   String classpathScope) {
+    private static void collectProjectArtifactsAndClasspathByScope(MavenProject project, List<Artifact> artifacts,
+            List<File> theClasspathFiles, String classpathScope) {
         if (SCOPE_COMPILE.equals(classpathScope)) {
             artifacts.addAll(project.getCompileArtifacts());
             theClasspathFiles.add(new File(project.getBuild().getOutputDirectory()));
@@ -129,19 +137,23 @@ public class PluginUtils {
     }
 
     /**
-     *  Resolve and add class annotation to report
-     * @param aClass benchmark classes objects
-     * @param benchmarkReport report data object
+     * Resolve and add benchmark annotation to report
+     * 
+     * @param annotated
+     *            benchmark annotated objects
+     * @param benchmarkReport
+     *            report data object
      */
-    public static void appendMetadataFromClass(Class<?> aClass, BenchmarkReport benchmarkReport) {
-        CyBenchMetadataList annotation = aClass.getDeclaredAnnotation(CyBenchMetadataList.class);
+    public static void appendMetadataFromAnnotated(Optional<? extends AnnotatedElement> annotated,
+            BenchmarkReport benchmarkReport) {
+        CyBenchMetadataList annotation = annotated.get().getDeclaredAnnotation(CyBenchMetadataList.class);
         if (annotation != null) {
             Arrays.stream(annotation.value()).forEach(annot -> {
                 checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
                 benchmarkReport.addMetadata(annot.key(), annot.value());
             });
         }
-        BenchmarkMetaData singleAnnotation = aClass.getDeclaredAnnotation(BenchmarkMetaData.class);
+        BenchmarkMetaData singleAnnotation = annotated.get().getDeclaredAnnotation(BenchmarkMetaData.class);
         if (singleAnnotation != null) {
             checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
             benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
@@ -149,41 +161,24 @@ public class PluginUtils {
     }
 
     /**
-     *  Resolve and add method annotation to report
-     * @param benchmarkMethod benchmark method objects
-     * @param benchmarkReport report data object
+     * A method needed in order to support the previous data model. Setting the needed values from annotation to a
+     * previously defined data model value
+     * 
+     * @param key
+     *            property key
+     * @param value
+     *            value to set for the key found
+     * @param benchmarkReport
+     *            report data object
      */
-    public static void appendMetadataFromMethod(Optional<Method> benchmarkMethod, BenchmarkReport benchmarkReport) {
-        CyBenchMetadataList annotation = benchmarkMethod.get().getDeclaredAnnotation(CyBenchMetadataList.class);
-        if (annotation != null) {
-            Arrays.stream(annotation.value()).forEach(annot -> {
-                checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
-                benchmarkReport.addMetadata(annot.key(), annot.value());
-            });
-        }
-        BenchmarkMetaData singleAnnotation = benchmarkMethod.get().getDeclaredAnnotation(BenchmarkMetaData.class);
-        if (singleAnnotation != null) {
-            checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
-            benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
-
-        }
-    }
-
-    /**
-     *  A method needed in order to support the previous data model. Setting the needed values from annotation to a
-     *  previously defined data model value
-     * @param key property key
-     * @param value value to set for the key found
-     * @param benchmarkReport report data object
-     */
-    private static void checkSetOldMetadataProps(String key,String value, BenchmarkReport benchmarkReport){
-        if(key.equals("api")){
+    private static void checkSetOldMetadataProps(String key, String value, BenchmarkReport benchmarkReport) {
+        if (key.equals("api")) {
             benchmarkReport.setCategory(value);
         }
-        if(key.equals("context")){
+        if (key.equals("context")) {
             benchmarkReport.setContext(value);
         }
-        if(key.equals("version")){
+        if (key.equals("version")) {
             benchmarkReport.setVersion(value);
         }
     }
@@ -204,4 +199,3 @@ public class PluginUtils {
     }
 
 }
-
