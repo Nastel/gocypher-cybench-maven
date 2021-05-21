@@ -276,8 +276,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
                 getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
-                    String fileNameForReport = "";
-                    String fileNameForReportEncrypted = "";
+                    String fileNameForReport;
+                    String fileNameForReportEncrypted;
                     fileNameForReport = ComputationUtils.createFileNameForReport(reportName, start,
                             report.getTotalScore(), false);
                     fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName, start,

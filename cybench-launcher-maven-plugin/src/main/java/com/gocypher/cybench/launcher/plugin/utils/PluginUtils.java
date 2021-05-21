@@ -59,7 +59,7 @@ public class PluginUtils {
         return customProperties;
     }
 
-    public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map pluginContext,
+    public static void resolveAndUpdateClasspath(Log log, MavenProject project, Map<String, ?> pluginContext,
             String classpathScope) throws Exception {
         /*
          * This part of code resolves project output directory and sets it Benchmarks classpath to plugin class realm
@@ -102,7 +102,7 @@ public class PluginUtils {
          * This update of the classpath is required in order to successfully launch JMH forked JVM's correctly and avoid
          * failures because of missing classpath libraries. JMH forked JVM's inherits System classpath.
          */
-        String finalClassPath = System.getProperty(KEY_SYSTEM_CLASSPATH) + tmpClasspath.toString();
+        String finalClassPath = System.getProperty(KEY_SYSTEM_CLASSPATH) + tmpClasspath;
         System.setProperty(KEY_SYSTEM_CLASSPATH, finalClassPath);
 
         log.info("Benchmarks classpath:" + System.getProperty(KEY_SYSTEM_CLASSPATH));
@@ -146,17 +146,19 @@ public class PluginUtils {
      */
     public static void appendMetadataFromAnnotated(Optional<? extends AnnotatedElement> annotated,
             BenchmarkReport benchmarkReport) {
-        CyBenchMetadataList annotation = annotated.get().getDeclaredAnnotation(CyBenchMetadataList.class);
-        if (annotation != null) {
-            Arrays.stream(annotation.value()).forEach(annot -> {
-                checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
-                benchmarkReport.addMetadata(annot.key(), annot.value());
-            });
-        }
-        BenchmarkMetaData singleAnnotation = annotated.get().getDeclaredAnnotation(BenchmarkMetaData.class);
-        if (singleAnnotation != null) {
-            checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
-            benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
+        if (annotated.isPresent()) {
+            CyBenchMetadataList annotation = annotated.get().getDeclaredAnnotation(CyBenchMetadataList.class);
+            if (annotation != null) {
+                Arrays.stream(annotation.value()).forEach(annot -> {
+                    checkSetOldMetadataProps(annot.key(), annot.value(), benchmarkReport);
+                    benchmarkReport.addMetadata(annot.key(), annot.value());
+                });
+            }
+            BenchmarkMetaData singleAnnotation = annotated.get().getDeclaredAnnotation(BenchmarkMetaData.class);
+            if (singleAnnotation != null) {
+                checkSetOldMetadataProps(singleAnnotation.key(), singleAnnotation.value(), benchmarkReport);
+                benchmarkReport.addMetadata(singleAnnotation.key(), singleAnnotation.value());
+            }
         }
     }
 
