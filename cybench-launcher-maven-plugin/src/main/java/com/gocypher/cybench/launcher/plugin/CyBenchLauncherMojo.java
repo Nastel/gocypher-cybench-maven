@@ -314,6 +314,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 } else {
                     throw new MojoExecutionException("Error during benchmarks run", t);
                 }
+            } finally {
+                DeliveryService.getInstance().close();
             }
             if (!isReportSentSuccessFully && shouldSendReportToCyBench && shouldFailBuildOnReportDeliveryFailure) {
                 throw new MojoExecutionException(
