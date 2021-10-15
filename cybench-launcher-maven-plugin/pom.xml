@@ -26,7 +26,8 @@
     <name>cybench-launcher-maven-plugin</name>
 
     <url>https://github.com/K2NIO/gocypher-cybench-maven</url>
-    <description>Maven plugin designed to execute JMH benchmarks, collect results, add environment properties, build report and store it
+    <description>Maven plugin designed to execute JMH benchmarks, collect results, add environment properties, build
+        report and store it
         into external repository for further analysis.
     </description>
     <licenses>
@@ -269,7 +270,7 @@
         <dependency>
             <groupId>com.gocypher.cybench.client</groupId>
             <artifactId>gocypher-cybench-runner</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
