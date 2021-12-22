@@ -74,7 +74,7 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
         <execution>
             <phase>test</phase>
             <goals>
-				<goal>cybench</goal>
+		<goal>cybench</goal>
             </goals>
         </execution>
     </executions>
