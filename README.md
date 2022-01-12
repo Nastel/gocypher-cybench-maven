@@ -22,7 +22,7 @@ Set the execution parameters:
     <plugin>
         <groupId>com.gocypher.cybench.launcher.plugin</groupId>
         <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
         <executions>
             <execution>
                 <phase>test</phase>
@@ -69,12 +69,12 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
     <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <executions>
         <execution>
             <phase>test</phase>
             <goals>
-				<goal>cybench</goal>
+                <goal>cybench</goal>
             </goals>
         </execution>
     </executions>
@@ -106,7 +106,7 @@ Include dependency to annotation processor in your project `pom.xml` file before
     <dependency>
         <groupId>com.gocypher.cybench.client</groupId>
         <artifactId>gocypher-cybench-annotations</artifactId>
-        <version>1.2.1</version>
+        <version>1.3.0</version>
     </dependency>
 ```
 
