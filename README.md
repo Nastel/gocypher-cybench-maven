@@ -24,7 +24,7 @@ Add CyBench plugin tags in your project POM file under section `build -> plugins
 ```xml
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
-    <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
+    <artifactId>cybench-launcher-maven-plugin</artifactId>
     <version>1.0.2</version>
     <executions>
         <execution>
@@ -71,7 +71,7 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 ```xml
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
-    <artifactId>gocypher-cybench-launch-maven-plugin</artifactId>
+    <artifactId>cybench-launcher-maven-plugin</artifactId>
     <version>1.0.2</version>
     <executions>
         <execution>
@@ -144,7 +144,7 @@ dependencies are not released to Central Maven repository.
 
 * After successful run project JAR's are installed to local Maven repository.
 
-#### Build  gocypher-cybench-launch-maven-plugin project
+#### Build cybench-launcher-maven-plugin project
 
 * Clone [GitHub repository](https://github.com/K2NIO/gocypher-cybench-maven) to local machine.
 * Navigate to directory `cybench-launch-maven-plugin`.
