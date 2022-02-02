@@ -261,9 +261,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted,
                             tokenAndEmail);
                     response = JSONUtils.parseJsonIntoMap(responseWithUrl);
-                    if (!response.containsKey("ERROR") && responseWithUrl != null && !responseWithUrl.isEmpty()) {
-                        deviceReports = response.get(Constants.REPORT_USER_URL).toString();
-                        resultURL = response.get(Constants.REPORT_URL).toString();
+                    if (!response.containsKey("error") && StringUtils.isNotEmpty(responseWithUrl)) {
+                        deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
+                        resultURL = String.valueOf(response.get(Constants.REPORT_URL));
                         isReportSentSuccessFully = true;
                         report.setDeviceReportsURL(deviceReports);
                         report.setReportURL(resultURL);
@@ -296,13 +296,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 IOUtils.removeTestDataFiles();
                 getLog().info("Removed all temporary auto-generated files!!!");
 
-                if (!response.containsKey("ERROR") && responseWithUrl != null && !responseWithUrl.isEmpty()) {
+                if (!response.containsKey("error") && StringUtils.isNotEmpty(responseWithUrl)) {
                     getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
                     getLog().info("You can find all device benchmarks on " + deviceReports);
                     getLog().info("Your report is available at " + resultURL);
                     getLog().info("NOTE: It may take a few minutes for your report to appear online");
                 } else {
-                    getLog().info((String) response.get("ERROR"));
+                    getLog().info((String) response.get("error"));
                     getLog().info("You may submit your report '"
                             + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
                             + Constants.CYB_UPLOAD_URL);
