@@ -25,7 +25,7 @@ Add CyBench plugin tags in your project POM file under section `build -> plugins
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
     <artifactId>cybench-launcher-maven-plugin</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <executions>
         <execution>
             <phase>test</phase>
@@ -72,7 +72,7 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 <plugin>
     <groupId>com.gocypher.cybench.launcher.plugin</groupId>
     <artifactId>cybench-launcher-maven-plugin</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <executions>
         <execution>
             <phase>test</phase>
@@ -111,7 +111,7 @@ build.
     <dependency>
         <groupId>com.gocypher.cybench.client</groupId>
         <artifactId>gocypher-cybench-annotations</artifactId>
-        <version>1.3.0</version>
+        <version>1.3.1</version>
     </dependency>
 ```
 
