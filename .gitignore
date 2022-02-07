@@ -33,11 +33,22 @@ buildNumber.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-/**/target
-/**/build
-/**/.vscode
-/**/.idea
-/**/*.iml
 *.prefs
 **/.classpath
 **/.project
+/**/target/*
+/**/node_modules/*
+/**/build/*
+/**/out/*
+/**/.idea
+/**/*.iml
+/**/*log.*
+/**/*.log
+/**/*_log
+/**/_dev/*
+/**/*_dev.*
+/**/temp/*
+/**/.vscode/*
+/**/deploy/*
+/**/.gradle/*
+/**/release/*

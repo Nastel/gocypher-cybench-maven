@@ -49,10 +49,9 @@ public final class PluginUtils {
         File classes = new File(project.getBuild().getOutputDirectory());
         File classesTest = new File(project.getBuild().getTestOutputDirectory());
         PluginDescriptor pluginDescriptor = (PluginDescriptor) pluginContext.get("pluginDescriptor");
-        try (ClassRealm classRealm = pluginDescriptor.getClassRealm()) {
-            classRealm.addURL(classes.toURI().toURL());
-            classRealm.addURL(classesTest.toURI().toURL());
-        }
+        ClassRealm classRealm = pluginDescriptor.getClassRealm();
+        classRealm.addURL(classes.toURI().toURL());
+        classRealm.addURL(classesTest.toURI().toURL());
 
         /*
          * This part of code resolves libraries used in project and sets it to System classpath that JMH could use it.
