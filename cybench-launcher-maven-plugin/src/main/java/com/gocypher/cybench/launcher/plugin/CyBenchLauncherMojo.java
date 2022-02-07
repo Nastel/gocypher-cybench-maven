@@ -224,6 +224,33 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
                             BenchmarkRunner.appendMetadataFromAnnotated(benchmarkMethod, benchmarkReport);
                             BenchmarkRunner.appendMetadataFromAnnotated(Optional.of(aClass), benchmarkReport);
+                            getLog().info("hey!");
+                            getLog().info("Project report is: " + benchmarkReport.getProject());
+                            try {
+                                if (StringUtils.isNotEmpty(benchmarkReport.getProject())) {
+                                    report.setProject(benchmarkReport.getProject());
+                                } else {
+                                    getLog().info("* Project name metadata not defined, grabbing it from build files..");
+                                    report.setProject(BenchmarkRunner.getMetadataFromBuildFile("artifactId"));
+                                    benchmarkReport.setProject(BenchmarkRunner.getMetadataFromBuildFile("artifactId"));
+                                }
+
+                                if (StringUtils.isNotEmpty(benchmarkReport.getProjectVersion())) {
+                                    report.setProjectVersion(benchmarkReport.getProjectVersion());
+                                } else {
+                                    getLog().info("* Project version metadata not defined, grabbing it from build files...");
+                                    report.setProjectVersion(BenchmarkRunner.getMetadataFromBuildFile("version")); // default
+                                    
+                                    benchmarkReport.setProjectVersion(BenchmarkRunner.getMetadataFromBuildFile("version"));
+                                }
+
+                                if (StringUtils.isEmpty(benchmarkReport.getVersion())) {
+                                    benchmarkReport.setVersion(BenchmarkRunner.getMetadataFromBuildFile("version"));
+
+                                }
+                            } catch (Exception e) {
+                                getLog().error("Error while attempting to setProject from runner: ", e);
+                            }
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
