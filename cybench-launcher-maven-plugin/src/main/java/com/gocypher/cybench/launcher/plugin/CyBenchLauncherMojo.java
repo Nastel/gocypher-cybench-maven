@@ -224,6 +224,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
                             BenchmarkRunner.appendMetadataFromAnnotated(benchmarkMethod, benchmarkReport);
                             BenchmarkRunner.appendMetadataFromAnnotated(Optional.of(aClass), benchmarkReport);
+                            BenchmarkRunner.syncReportsMetadata(report, benchmarkReport);
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
