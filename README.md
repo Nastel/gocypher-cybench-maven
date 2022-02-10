@@ -14,6 +14,17 @@ resources for a successful and stable benchmarking of software items.
 
 ## Start using CyBench Maven plugin
 
+### Prerequisites for Usage
+
+ * CyBench Plugin for Maven developed with:
+    * Java 8 (jdk-1.8.0_311)
+ * CyBench Plugin for Maven tested with:
+    * Java 8
+    * Java 11 (jdk-11.0.13)
+    * Maven v3.8.3
+
+**NOTE:** Requires at least Java 8 and Maven v3.2.5
+
 ### CyBench Maven Plugin Usage
 
 Add CyBench plugin tags in your project POM file under section `build -> plugins`. Set the execution parameters:
