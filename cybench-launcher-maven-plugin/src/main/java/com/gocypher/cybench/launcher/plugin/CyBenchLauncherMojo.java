@@ -151,10 +151,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 }
                 benchmarkSettings.put("benchReportName", reportName);
 
-                if (!BenchmarkRunner.checkValidMetadataProps("artifactId")
-                        || !BenchmarkRunner.checkValidMetadataProps("version")) {
-                    System.exit(1);
-                }
                 getLog().info("Executing benchmarks...");
 
                 OptionsBuilder optBuild = new OptionsBuilder();
