@@ -252,17 +252,18 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(securityBuilder,
                         report);
                 reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
-                String responseWithUrl = null;
                 String deviceReports = null;
                 String resultURL = null;
                 Map<?, ?> response = new HashMap<>();
                 if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                     String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
 
-                    responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted,
+                    String responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted,
                             tokenAndEmail);
-                    response = JSONUtils.parseJsonIntoMap(responseWithUrl);
-                    if (!response.containsKey("error") && StringUtils.isNotEmpty(responseWithUrl)) {
+                    if (StringUtils.isNotEmpty(responseWithUrl)) {
+                        response = JSONUtils.parseJsonIntoMap(responseWithUrl);
+                    }
+                    if (!BenchmarkRunner.isErrorResponse(response)) {
                         deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
                         resultURL = String.valueOf(response.get(Constants.REPORT_URL));
                         isReportSentSuccessFully = true;
@@ -297,13 +298,16 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 IOUtils.removeTestDataFiles();
                 getLog().info("Removed all temporary auto-generated files!!!");
 
-                if (!response.containsKey("error") && StringUtils.isNotEmpty(responseWithUrl)) {
+                if (!!BenchmarkRunner.isErrorResponse(response)) {
                     getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
                     getLog().info("You can find all device benchmarks on " + deviceReports);
                     getLog().info("Your report is available at " + resultURL);
                     getLog().info("NOTE: It may take a few minutes for your report to appear online");
                 } else {
-                    getLog().info((String) response.get("error"));
+                    String errMsg = BenchmarkRunner.getErrorResponseMessage(response);
+                    if (errMsg != null) {
+                        getLog().error(errMsg);
+                    }
                     getLog().info("You may submit your report '"
                             + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
                             + Constants.CYB_UPLOAD_URL);
