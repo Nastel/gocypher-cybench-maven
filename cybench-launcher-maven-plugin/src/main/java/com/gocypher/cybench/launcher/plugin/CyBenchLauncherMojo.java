@@ -237,7 +237,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     report.addToBenchmarks(benchReport);
                 }
                 report.computeScores();
-                BenchmarkRunner.getReportUploadStatus(report);
+                // BenchmarkRunner.getReportUploadStatus(report);
                 getLog().info(
                         "-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
@@ -277,7 +277,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 }
 
                 String reportJSON = JSONUtils.marshalToPrettyJson(report);
-                getLog().info(reportJSON);
+                // getLog().info(reportJSON);
                 if (shouldStoreReportToFileSystem) {
                     String fileNameForReport;
                     String fileNameForReportEncrypted;
