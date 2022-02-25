@@ -298,7 +298,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 IOUtils.removeTestDataFiles();
                 getLog().info("Removed all temporary auto-generated files!!!");
 
-                if (!!BenchmarkRunner.isErrorResponse(response)) {
+                if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
                     getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
                     getLog().info("You can find all device benchmarks on " + deviceReports);
                     getLog().info("Your report is available at " + resultURL);
