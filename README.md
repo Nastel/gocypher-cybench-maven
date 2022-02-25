@@ -71,7 +71,7 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 | **reportUploadStatus**| Parameter which indicates if the report is public or private. Possible values: `public`, `private`  |   public  |
 | **reportName**| Name of the benchmark report. |   CyBench Report  |
 | **customBenchmarkMetadata**| A property which adds extra properties to the benchmarks report such as category or version or context. Configuration pattern is `<fully qualified benchmark class name>=<key1>:<value1>;<key2>:<value2>`. Example which adds category for class CollectionsBenchmarks: `com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;`   |   -  |
-| **userProperties**| User defined properties which will be added to benchmarks report section `environmentSettings->userDefinedProperties` as key/value strings. Configuration pattern:`<key1>:<value1>;<key2>:<value2>`. Example which adds a project name:`project=My Test Project;` |   -  |
+| **userProperties**| User defined properties which will be added to benchmarks report section `environmentSettings->userDefinedProperties` as key/value strings. Configuration pattern:`<key1>:<value1>;<key2>:<value2>`. Example which adds a library name:`library=My Library;` |   -  |
 | **skip**| A flag which allows to skip benchmarks execution during build process. Benchmarks execution also can be skipped via JVM system property `-DskipCybench`. |   false  |
 | **benchAccessToken** | By providing the "bench" token that you get after creating a workspace in CyBench UI, you can send reports to your private directory, which will be visible only to the users that you authorize. | - |
 | **email** | Email property is used to identify report sender while sending reports to both private and public repositories | - |
@@ -98,14 +98,12 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
         <measurementIterations>5</measurementIterations>
         <measurementTime>5</measurementTime>
         <warmUpIterations>1</warmUpIterations>
-        <warmUpTime>4</warmUpTime>
+        <warmUpTime>5</warmUpTime>
         <expectedScore>1</expectedScore>
         <shouldSendReportToCyBench>false</shouldSendReportToCyBench>
-        <shouldStoreReportToFileSystem>true</shouldStoreReportToFileSystem>
-        <reportUploadStatus>private</reportUploadStatus>
-        <reportsFolder>C:/CyBench/reports/</reportsFolder>
-        <reportName>My Private Build Process Benchmark</reportName>
-        <userProperties>project=My Test Project;</userProperties>
+        <reportsFolder>./reports/</reportsFolder>
+        <reportName>My Report</reportName>
+        <userProperties>library=My Library;</userProperties>
         <customBenchmarkMetadata>com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;</customBenchmarkMetadata>
     </configuration>
 </plugin>
