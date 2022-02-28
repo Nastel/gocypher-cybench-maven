@@ -99,7 +99,6 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
         <measurementTime>5</measurementTime>
         <warmUpIterations>1</warmUpIterations>
         <warmUpTime>5</warmUpTime>
-        <expectedScore>1</expectedScore>
         <shouldSendReportToCyBench>false</shouldSendReportToCyBench>
         <reportsFolder>./reports/</reportsFolder>
         <reportName>My Report</reportName>
