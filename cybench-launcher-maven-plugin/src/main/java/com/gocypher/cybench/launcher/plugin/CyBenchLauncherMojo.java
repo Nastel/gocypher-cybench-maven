@@ -228,7 +228,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
-
                     });
                 }
                 List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
@@ -321,18 +320,21 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 }
             } finally {
                 DeliveryService.getInstance().close();
+
+                getLog().info(
+                        "-----------------------------------------------------------------------------------------");
+                getLog().info("         Finished CyBench benchmarking ("
+                        + ComputationUtils.formatInterval(System.currentTimeMillis() - start) + ")");
+                getLog().info(
+                        "-----------------------------------------------------------------------------------------");
             }
+
             if (!isReportSentSuccessFully && shouldSendReportToCyBench && shouldFailBuildOnReportDeliveryFailure) {
                 throw new MojoExecutionException(
                         "Error during benchmarks run, report was not sent to CyBench as configured!");
             }
-            getLog().info("-----------------------------------------------------------------------------------------");
-            getLog().info("         Finished CyBench benchmarking ("
-                    + ComputationUtils.formatInterval(System.currentTimeMillis() - start) + ")");
-            getLog().info("-----------------------------------------------------------------------------------------");
         } else {
             getLog().info("Skipping CyBench execution");
         }
     }
-
 }
