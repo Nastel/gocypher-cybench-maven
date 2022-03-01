@@ -119,7 +119,7 @@ build.
     <dependency>
         <groupId>com.gocypher.cybench.client</groupId>
         <artifactId>gocypher-cybench-annotations</artifactId>
-        <version>1.3.1</version>
+        <version>1.3.3</version>
     </dependency>
 ```
 

@@ -263,7 +263,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     if (StringUtils.isNotEmpty(responseWithUrl)) {
                         response = JSONUtils.parseJsonIntoMap(responseWithUrl);
                     }
-                    if (!BenchmarkRunner.isErrorResponse(response)) {
+                    if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
                         deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
                         resultURL = String.valueOf(response.get(Constants.REPORT_URL));
                         isReportSentSuccessFully = true;
