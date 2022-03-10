@@ -74,6 +74,7 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 | **userProperties**| User defined properties which will be added to benchmarks report section `environmentSettings->userDefinedProperties` as key/value strings. Configuration pattern:`<key1>:<value1>;<key2>:<value2>`. Example which adds a library name:`library=My Library;` |   -  |
 | **skip**| A flag which allows to skip benchmarks execution during build process. Benchmarks execution also can be skipped via JVM system property `-DskipCybench`. |   false  |
 | **benchAccessToken** | By providing the "bench" token that you get after creating a workspace in CyBench UI, you can send reports to your private directory, which will be visible only to the users that you authorize. | - |
+| **benchQueryToken** | By providing the "query" token that you get after creating a workspace in CyBench UI, you can run and send automated comparisons within your project to your private directory, which will be visible only to the users that you authorize. | - |
 | **email** | Email property is used to identify report sender while sending reports to both private and public repositories | - |
 | **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false |
 

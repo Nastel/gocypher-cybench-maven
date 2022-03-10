@@ -110,6 +110,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
     @Parameter(property = "cybench.benchAccessToken", defaultValue = "")
     private String benchAccessToken = "";
+    @Parameter(property = "cybench.benchQueryToken", defaultValue = "")
+    private String benchQueryToken = "";
 
     @Parameter(property = "cybench.email", defaultValue = "")
     private String email = "";
@@ -258,7 +260,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
 
                     String responseWithUrl = DeliveryService.getInstance().sendReportForStoring(reportEncrypted,
-                            tokenAndEmail);
+                            tokenAndEmail, benchQueryToken);
                     if (StringUtils.isNotEmpty(responseWithUrl)) {
                         response = JSONUtils.parseJsonIntoMap(responseWithUrl);
                     }
