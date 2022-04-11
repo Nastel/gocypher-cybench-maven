@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.*;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -57,6 +58,7 @@ import com.gocypher.cybench.launcher.report.ReportingService;
 import com.gocypher.cybench.launcher.utils.ComputationUtils;
 import com.gocypher.cybench.launcher.utils.Constants;
 import com.gocypher.cybench.launcher.utils.SecurityBuilder;
+import com.gocypher.cybench.model.ComparisonConfig;
 
 @Mojo(name = "cybench", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.INTEGRATION_TEST)
 public class CyBenchLauncherMojo extends AbstractMojo {
@@ -107,14 +109,30 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private boolean useCyBenchBenchmarkSettings = true;
     @Parameter(property = "cybench.jvmArgs", defaultValue = "")
     private String jmvArgs = "";
-
     @Parameter(property = "cybench.benchAccessToken", defaultValue = "")
     private String benchAccessToken = "";
     @Parameter(property = "cybench.benchQueryToken", defaultValue = "")
     private String benchQueryToken = "";
-
     @Parameter(property = "cybench.email", defaultValue = "")
     private String email = "";
+
+    @Parameter(property = "cybench.automationScope", defaultValue = "")
+    private String automationScope;
+    @Parameter(property = "cybench.automationCompareVersion", defaultValue = "")
+    private String automationCompareVersion;
+    @Parameter(property = "cybench.automationNumLatestReports", defaultValue = "")
+    private int automationNumLatestReports;
+    @Parameter(property = "cybench.automationAnomaliesAllowed", defaultValue = "")
+    private int automationAnomaliesAllowed;
+    @Parameter(property = "cybench.automationMethod", defaultValue = "")
+    private String automationMethod;
+    @Parameter(property = "cybench.automationThreshold", defaultValue = "")
+    private String automationThreshold;
+    @Parameter(property = "cybench.automationPercentChangeAllowed", defaultValue = "")
+    private double automationPercentChangeAllowed;
+    @Parameter(property = "cybench.automationDeviationsAllowed", defaultValue = "")
+    private double automationDeviationsAllowed;
+
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -126,6 +144,16 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             getLog().info(
                     "                                 Starting CyBench benchmarks (Maven Plugin)                             ");
             getLog().info("-----------------------------------------------------------------------------------------");
+
+            ComparisonConfig automatedComparisonCfg;
+            try {
+                automatedComparisonCfg = checkConfigValidity();
+                getLog().info("** Configuration loaded: automated comparison configuration");
+            } catch (Exception e) {
+                automatedComparisonCfg = null;
+                getLog().error("Failed to parse automated comparison configuration", e);
+            }
+
             try {
                 PluginUtils.resolveAndUpdateClasspath(getLog(), project, getPluginContext(), classpathScope);
 
@@ -152,6 +180,10 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             project.getArtifactId(), project.getVersion());
                 }
                 benchmarkSettings.put("benchReportName", reportName);
+
+                Map<String, String> PROJECT_METADATA_MAP = new HashMap<>();
+                PROJECT_METADATA_MAP.put(Constants.PROJECT_NAME, project.getArtifactId());
+                PROJECT_METADATA_MAP.put(Constants.PROJECT_VERSION, project.getVersion());
 
                 getLog().info("Executing benchmarks...");
 
@@ -209,6 +241,16 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 report.getEnvironmentSettings().put("userDefinedProperties",
                         ComputationUtils.customUserDefinedProperties(userProperties));
                 report.setBenchmarkSettings(benchmarkSettings);
+
+                if (automatedComparisonCfg != null) {
+                    if (automatedComparisonCfg.getScope().equals(ComparisonConfig.Scope.WITHIN)) {
+                        automatedComparisonCfg.setCompareVersion(PROJECT_METADATA_MAP.get(Constants.PROJECT_VERSION));
+                    }
+                    automatedComparisonCfg.setRange(String.valueOf(automatedComparisonCfg.getCompareLatestReports()));
+                    automatedComparisonCfg.setProjectName(PROJECT_METADATA_MAP.get(Constants.PROJECT_NAME));
+                    automatedComparisonCfg.setProjectVersion(PROJECT_METADATA_MAP.get(Constants.PROJECT_VERSION));
+                    report.setAutomatedComparisonConfig(automatedComparisonCfg);
+                }
 
                 for (String s : report.getBenchmarks().keySet()) {
                     List<BenchmarkReport> custom = new ArrayList<>(report.getBenchmarks().get(s));
@@ -304,6 +346,14 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     getLog().info("You can find all device benchmarks on " + deviceReports);
                     getLog().info("Your report is available at " + resultURL);
                     getLog().info("NOTE: It may take a few minutes for your report to appear online");
+
+                    if (response.containsKey("automatedComparisons")) {
+                        List<Map<String, Object>> automatedComparisons = (List<Map<String, Object>>) response
+                                .get("automatedComparisons");
+                        if (BenchmarkRunner.tooManyAnomalies(automatedComparisons)) {
+                            System.exit(1);
+                        }
+                    }
                 } else {
                     String errMsg = BenchmarkRunner.getErrorResponseMessage(response);
                     if (errMsg != null) {
@@ -338,5 +388,108 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         } else {
             getLog().info("Skipping CyBench execution");
         }
+    }
+
+    public ComparisonConfig checkConfigValidity() throws Exception {
+        ComparisonConfig verifiedComparisonConfig = new ComparisonConfig();
+
+        String SCOPE_STR = automationScope;
+        if (StringUtils.isBlank(SCOPE_STR)) {
+            throw new Exception("Scope is not specified!");
+        } else {
+            SCOPE_STR = SCOPE_STR.toUpperCase();
+        }
+        ComparisonConfig.Scope SCOPE;
+        String COMPARE_VERSION = automationCompareVersion;
+        Integer NUM_LATEST_REPORTS = automationNumLatestReports;
+        Integer ANOMALIES_ALLOWED = automationAnomaliesAllowed;
+        String METHOD_STR = automationMethod;
+        if (StringUtils.isBlank(METHOD_STR)) {
+            throw new Exception("Method is not specified!");
+        } else {
+            METHOD_STR = METHOD_STR.toUpperCase();
+        }
+        ComparisonConfig.Method METHOD;
+        String THRESHOLD_STR = automationThreshold;
+        if (StringUtils.isNotBlank(THRESHOLD_STR)) {
+            THRESHOLD_STR = THRESHOLD_STR.toUpperCase();
+        }
+        ComparisonConfig.Threshold THRESHOLD;
+        Double PERCENT_CHANGE_ALLOWED = automationPercentChangeAllowed;
+        Double DEVIATIONS_ALLOWED = automationDeviationsAllowed;
+
+        if (NUM_LATEST_REPORTS != null) {
+            if (NUM_LATEST_REPORTS < 1) {
+                throw new Exception("Not enough latest reports specified to compare to!");
+            }
+            verifiedComparisonConfig.setCompareLatestReports(NUM_LATEST_REPORTS);
+        } else {
+            throw new Exception("Number of latest reports to compare to was not specified!");
+        }
+        if (ANOMALIES_ALLOWED != null) {
+            if (ANOMALIES_ALLOWED < 1) {
+                throw new Exception("Not enough anomalies allowed specified!");
+            }
+            verifiedComparisonConfig.setAnomaliesAllowed(ANOMALIES_ALLOWED);
+        } else {
+            throw new Exception("Anomalies allowed was not specified!");
+        }
+
+        if (!EnumUtils.isValidEnum(ComparisonConfig.Scope.class, SCOPE_STR)) {
+            throw new Exception("Scope is invalid!");
+        } else {
+            SCOPE = ComparisonConfig.Scope.valueOf(SCOPE_STR);
+            verifiedComparisonConfig.setScope(SCOPE);
+        }
+        if (!EnumUtils.isValidEnum(ComparisonConfig.Method.class, METHOD_STR)) {
+            throw new Exception("Method is invalid!");
+        } else {
+            METHOD = ComparisonConfig.Method.valueOf(METHOD_STR);
+            verifiedComparisonConfig.setMethod(METHOD);
+        }
+
+        if (SCOPE.equals(ComparisonConfig.Scope.WITHIN) && StringUtils.isNotEmpty(COMPARE_VERSION)) {
+            COMPARE_VERSION = "";
+            getLog().warn(
+                    "Automated comparison config scoped specified as WITHIN but compare version was also specified, will compare WITHIN the currently tested version.");
+        } else if (SCOPE.equals(ComparisonConfig.Scope.BETWEEN) && StringUtils.isBlank(COMPARE_VERSION)) {
+            throw new Exception("Scope specified as BETWEEN but no compare version specified!");
+        } else if (SCOPE.equals(ComparisonConfig.Scope.BETWEEN)) {
+            verifiedComparisonConfig.setCompareVersion(COMPARE_VERSION);
+        }
+
+        if (METHOD.equals(ComparisonConfig.Method.SD)) {
+            if (DEVIATIONS_ALLOWED != null) {
+                if (DEVIATIONS_ALLOWED <= 0) {
+                    throw new Exception("Method specified as SD but not enough deviations allowed were specified!");
+                }
+                verifiedComparisonConfig.setDeviationsAllowed(DEVIATIONS_ALLOWED);
+            } else {
+                throw new Exception("Method specified as SD but deviations allowed was not specified!");
+            }
+        } else if (METHOD.equals(ComparisonConfig.Method.DELTA)) {
+            if (!EnumUtils.isValidEnum(ComparisonConfig.Threshold.class, THRESHOLD_STR) || StringUtils.isBlank(THRESHOLD_STR)) {
+                throw new Exception(
+                        "Method specified as DELTA but no threshold specified or threshold is invalid!");
+            } else {
+                THRESHOLD = ComparisonConfig.Threshold.valueOf(THRESHOLD_STR);
+                verifiedComparisonConfig.setThreshold(THRESHOLD);
+            }
+
+            if (THRESHOLD.equals(ComparisonConfig.Threshold.PERCENT_CHANGE)) {
+                if (PERCENT_CHANGE_ALLOWED != null) {
+                    if (PERCENT_CHANGE_ALLOWED <= 0) {
+                        throw new Exception(
+                                "Threshold specified as PERCENT_CHANGE but percent change is not high enough!");
+                    }
+                    verifiedComparisonConfig.setPercentChangeAllowed(PERCENT_CHANGE_ALLOWED);
+                } else {
+                    throw new Exception(
+                            "Threshold specified as PERCENT_CHANGE but percent change allowed was not specified!");
+                }
+            }
+        }
+
+        return verifiedComparisonConfig;
     }
 }

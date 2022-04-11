@@ -301,6 +301,11 @@
             <artifactId>gocypher-cybench-runner</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.gocypher.cybench.client</groupId>
+            <artifactId>gocypher-cybench-comparator</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
