@@ -79,6 +79,9 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 | **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false |
 
 You can also add a configuration for automated performance regression testing, which will run with every single benchmark report.
+  
+**NOTE** In order to run automated comparisons, you must add the **benchQueryToken** to the configuration.
+
 
 | Property name        | Description           | Options  |
 | ------------- |-------------| -----:|
