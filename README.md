@@ -78,6 +78,20 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 | **email** | Email property is used to identify report sender while sending reports to both private and public repositories | - |
 | **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false |
 
+You can also add a configuration for automated performance regression testing, which will run with every single benchmark report.
+
+| Property name        | Description           | Options  |
+| ------------- |-------------| -----:|
+| **automationScope** | Choose between comparing within current version, or between previous versions. When using `BETWEEN`, a specific version must be specified with the property `automationCompareVersion`. | `WITHIN` or `BETWEEN` |
+| **automationCompareVersion** | Used for `BETWEEN` version comparisons. | Any project version you have previously tested |
+| **automationNumLatestReports** | How many reports do you want to compare against? 1 will compare this report against the most recent report in the version you are comparing against. # > 1 will compare this report against the average of the scores of the most recent # reports in the version you are comparing against. | Number >= 1 |
+| **automationAnomaliesAllowed** | How many anomalies do you want to allow? If the number of benchmark anomalies surpasses your specified number, CyBench benchmark runner will fail... triggering your CI/CD pipeline to halt. | Number >= 1 |
+| **automationMethod** | Decide which method of comparison to use. `DELTA` will compare difference in score, and requires an additional property, `automationThreshold`. `SD` will do comparisons regarding standard deviation. `SD` requires an additional property as well, `automationDeviationsAllowed`. | `DELTA` or `SD` |
+| **automationThreshold** | Only used with the `DELTA` method. `GREATER` will compare raw scores, `PERCENT_CHANGE` is used to measure the percent change of the score in comparison to previous scores. `PERCENT_CHANGE` requires an additional property: `automationPercentChangeAllowed`. | `GREATER` or `PERCENT_CHANGE` |
+| **automationPercentChangeAllowed** | This argument is used when running assertions, makes sure your new score is within X percent of the previous scores you're comparing to. | Any Double value. |
+| **automationDeviationsAllowed** | Used with assertions to check that the new score is within the given amount of deviations from the mean. (mean being calculated from the scores being compared to). | Any Double value. |
+
+
 ### Example of CyBench Maven plugin configuration
 
 ```xml
@@ -105,6 +119,14 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
         <reportName>My Report</reportName>
         <userProperties>library=My Library;</userProperties>
         <customBenchmarkMetadata>com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;</customBenchmarkMetadata>
+       
+        <automationScope>BETWEEN</automationScope>
+        <automationCompareVersion>2.0</automationCompareVersion>
+        <automationNumLatestReports>1</automationNumLatestReports>
+        <automationAnomaliesAllowed>1</automationAnomaliesAllowed>
+        <automationMethod>DETLA</automationMethod>
+        <automationThreshold>PERCENT_CHANGE</automationThreshold>
+        <automationPercentChangeAllowed>10</automationPercentChangeAllowed>
     </configuration>
 </plugin>
 ```
@@ -120,7 +142,7 @@ build.
     <dependency>
         <groupId>com.gocypher.cybench.client</groupId>
         <artifactId>gocypher-cybench-annotations</artifactId>
-        <version>1.3.3</version>
+        <version>1.3.4</version>
     </dependency>
 ```
 
