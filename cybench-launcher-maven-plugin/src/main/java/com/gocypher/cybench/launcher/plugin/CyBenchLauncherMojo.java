@@ -133,8 +133,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.automationDeviationsAllowed", defaultValue = "")
     private double automationDeviationsAllowed;
 
-
     @Override
+    @SuppressWarnings("unchecked")
     public void execute() throws MojoExecutionException {
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
@@ -357,7 +357,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 } else {
                     String errMsg = BenchmarkRunner.getErrorResponseMessage(response);
                     if (errMsg != null) {
-                        getLog().error(errMsg);
+                        getLog().error("CyBench backend service sent error response: " + errMsg);
                     }
                     getLog().info("You may submit your report '"
                             + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
@@ -468,9 +468,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 throw new Exception("Method specified as SD but deviations allowed was not specified!");
             }
         } else if (METHOD.equals(ComparisonConfig.Method.DELTA)) {
-            if (!EnumUtils.isValidEnum(ComparisonConfig.Threshold.class, THRESHOLD_STR) || StringUtils.isBlank(THRESHOLD_STR)) {
-                throw new Exception(
-                        "Method specified as DELTA but no threshold specified or threshold is invalid!");
+            if (!EnumUtils.isValidEnum(ComparisonConfig.Threshold.class, THRESHOLD_STR)
+                    || StringUtils.isBlank(THRESHOLD_STR)) {
+                throw new Exception("Method specified as DELTA but no threshold specified or threshold is invalid!");
             } else {
                 THRESHOLD = ComparisonConfig.Threshold.valueOf(THRESHOLD_STR);
                 verifiedComparisonConfig.setThreshold(THRESHOLD);

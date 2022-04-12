@@ -78,10 +78,10 @@ Plugin is configurable inside plugin configuration tags. Properties available fo
 | **email** | Email property is used to identify report sender while sending reports to both private and public repositories | - |
 | **shouldFailBuildOnReportDeliveryFailure**| A flag which triggers build failure if the benchmark report was configured to be sent to CyBench but its delivery failed. |   false |
 
-You can also add a configuration for automated performance regression testing, which will run with every single benchmark report.
-  
-**NOTE** In order to run automated comparisons, you must add the **benchQueryToken** to the configuration.
+You can also add a configuration for automated performance regression testing, which will run with every single
+benchmark report.
 
+**NOTE** In order to run automated comparisons, you must add the **benchQueryToken** to the configuration.
 
 | Property name        | Description           | Options  |
 | ------------- |-------------| -----:|
@@ -93,7 +93,6 @@ You can also add a configuration for automated performance regression testing, w
 | **automationThreshold** | Only used with the `DELTA` method. `GREATER` will compare raw scores, `PERCENT_CHANGE` is used to measure the percent change of the score in comparison to previous scores. `PERCENT_CHANGE` requires an additional property: `automationPercentChangeAllowed`. | `GREATER` or `PERCENT_CHANGE` |
 | **automationPercentChangeAllowed** | This argument is used when running assertions, makes sure your new score is within X percent of the previous scores you're comparing to. | Any Double value. |
 | **automationDeviationsAllowed** | Used with assertions to check that the new score is within the given amount of deviations from the mean. (mean being calculated from the scores being compared to). | Any Double value. |
-
 
 ### Example of CyBench Maven plugin configuration
 
@@ -122,7 +121,7 @@ You can also add a configuration for automated performance regression testing, w
         <reportName>My Report</reportName>
         <userProperties>library=My Library;</userProperties>
         <customBenchmarkMetadata>com.gocypher.benchmarks.client.CollectionsBenchmarks=category:Collections;</customBenchmarkMetadata>
-       
+
         <automationScope>BETWEEN</automationScope>
         <automationCompareVersion>2.0</automationCompareVersion>
         <automationNumLatestReports>1</automationNumLatestReports>
