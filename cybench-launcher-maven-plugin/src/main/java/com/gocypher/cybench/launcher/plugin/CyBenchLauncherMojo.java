@@ -121,17 +121,17 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     private String automationScope;
     @Parameter(property = "cybench.automationCompareVersion", defaultValue = "")
     private String automationCompareVersion;
-    @Parameter(property = "cybench.automationNumLatestReports", defaultValue = "")
+    @Parameter(property = "cybench.automationNumLatestReports", defaultValue = "-1")
     private int automationNumLatestReports;
-    @Parameter(property = "cybench.automationAnomaliesAllowed", defaultValue = "")
+    @Parameter(property = "cybench.automationAnomaliesAllowed", defaultValue = "-1")
     private int automationAnomaliesAllowed;
     @Parameter(property = "cybench.automationMethod", defaultValue = "")
     private String automationMethod;
     @Parameter(property = "cybench.automationThreshold", defaultValue = "")
     private String automationThreshold;
-    @Parameter(property = "cybench.automationPercentChangeAllowed", defaultValue = "")
+    @Parameter(property = "cybench.automationPercentChangeAllowed", defaultValue = "-1")
     private double automationPercentChangeAllowed;
-    @Parameter(property = "cybench.automationDeviationsAllowed", defaultValue = "")
+    @Parameter(property = "cybench.automationDeviationsAllowed", defaultValue = "-1")
     private double automationDeviationsAllowed;
 
     @Override
@@ -419,7 +419,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         Double PERCENT_CHANGE_ALLOWED = automationPercentChangeAllowed;
         Double DEVIATIONS_ALLOWED = automationDeviationsAllowed;
 
-        if (NUM_LATEST_REPORTS != null) {
+        if (NUM_LATEST_REPORTS != null && NUM_LATEST_REPORTS != -1) {
             if (NUM_LATEST_REPORTS < 1) {
                 throw new Exception("Not enough latest reports specified to compare to!");
             }
@@ -427,7 +427,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         } else {
             throw new Exception("Number of latest reports to compare to was not specified!");
         }
-        if (ANOMALIES_ALLOWED != null) {
+        if (ANOMALIES_ALLOWED != null && ANOMALIES_ALLOWED != -1) {
             if (ANOMALIES_ALLOWED < 1) {
                 throw new Exception("Not enough anomalies allowed specified!");
             }
@@ -460,7 +460,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         }
 
         if (METHOD.equals(ComparisonConfig.Method.SD)) {
-            if (DEVIATIONS_ALLOWED != null) {
+            if (DEVIATIONS_ALLOWED != null && DEVIATIONS_ALLOWED != -1) {
                 if (DEVIATIONS_ALLOWED <= 0) {
                     throw new Exception("Method specified as SD but not enough deviations allowed were specified!");
                 }
@@ -478,7 +478,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             }
 
             if (THRESHOLD.equals(ComparisonConfig.Threshold.PERCENT_CHANGE)) {
-                if (PERCENT_CHANGE_ALLOWED != null) {
+                if (PERCENT_CHANGE_ALLOWED != null && PERCENT_CHANGE_ALLOWED != -1) {
                     if (PERCENT_CHANGE_ALLOWED <= 0) {
                         throw new Exception(
                                 "Threshold specified as PERCENT_CHANGE but percent change is not high enough!");
