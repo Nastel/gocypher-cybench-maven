@@ -269,7 +269,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             Optional<Method> benchmarkMethod = JMHUtils.getBenchmarkMethod(method, aClass);
                             BenchmarkRunner.appendMetadataFromAnnotated(benchmarkMethod, benchmarkReport);
                             BenchmarkRunner.appendMetadataFromAnnotated(Optional.of(aClass), benchmarkReport);
-                            BenchmarkRunner.syncReportsMetadata(report, benchmarkReport);
+                            syncReportsMetadata(report, benchmarkReport, PROJECT_METADATA_MAP);
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
@@ -388,6 +388,59 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             }
         } else {
             getLog().info("Skipping CyBench execution");
+        }
+    }
+
+    public void syncReportsMetadata(BenchmarkOverviewReport report, BenchmarkReport benchmarkReport, Map<String, String> PROJECT_METADATA_MAP) {
+        try {
+            String projectVersion = PROJECT_METADATA_MAP.get(Constants.PROJECT_VERSION);
+            String projectArtifactId = PROJECT_METADATA_MAP.get(Constants.PROJECT_NAME);
+
+            if (StringUtils.isNotEmpty(benchmarkReport.getProject())) {
+                report.setProject(benchmarkReport.getProject());
+            } else {
+                getLog().info("* Project name metadata not defined, grabbing it from build files...");
+                report.setProject(projectArtifactId);
+                benchmarkReport.setProject(projectArtifactId);
+            }
+
+            if (StringUtils.isNotEmpty(benchmarkReport.getProjectVersion())) {
+                report.setProjectVersion(benchmarkReport.getProjectVersion());
+            } else {
+                getLog().info("* Project version metadata not defined, grabbing it from build files...");
+                report.setProjectVersion(projectVersion); // default
+                benchmarkReport.setProjectVersion(projectVersion);
+            }
+
+            if (StringUtils.isEmpty(benchmarkReport.getVersion())) {
+                benchmarkReport.setVersion(projectVersion);
+            }
+
+            if (StringUtils.isEmpty(report.getBenchmarkSessionId())) {
+                Map<String, String> bMetadata = benchmarkReport.getMetadata();
+                if (bMetadata != null) {
+                    String sessionId = bMetadata.get("benchSession");
+                    if (StringUtils.isNotEmpty(sessionId)) {
+                        report.setBenchmarkSessionId(sessionId);
+                    }
+                }
+            }
+
+            if (benchmarkReport.getCategory().equals("CUSTOM")) {
+                int classIndex = benchmarkReport.getName().lastIndexOf(".");
+                if (classIndex > 0) {
+                    String pckgAndClass = benchmarkReport.getName().substring(0, classIndex);
+                    int pckgIndex = pckgAndClass.lastIndexOf(".");
+                    if (pckgIndex > 0) {
+                        String pckg = pckgAndClass.substring(0, pckgIndex);
+                        benchmarkReport.setCategory(pckg);
+                    } else {
+                        benchmarkReport.setCategory(pckgAndClass);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            getLog().error("Error while attempting to synchronize benchmark metadata from runner: ", e);
         }
     }
 
