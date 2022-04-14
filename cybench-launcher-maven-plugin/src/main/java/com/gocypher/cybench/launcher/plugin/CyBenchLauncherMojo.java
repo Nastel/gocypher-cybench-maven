@@ -140,7 +140,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         if (!skip && System.getProperty(PluginUtils.KEY_SKIP_CYBENCH) == null) {
             System.setProperty("collectHw", "true");
             boolean isReportSentSuccessFully = false;
-            int exitCode = 0;
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
             getLog().info(
@@ -364,7 +363,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                             + Constants.CYB_UPLOAD_URL);
                 }
             } catch (TooManyAnomaliesException e) {
-                throw new MojoExecutionException("Too many anomalies found during benchmarks run", e);
+                throw new MojoExecutionException("Too many anomalies found during benchmarks run: " + e.getMessage());
             } catch (Throwable t) {
                 getLog().error(t);
                 if (t.getMessage() != null && t.getMessage().contains("/META-INF/BenchmarkList")) {
