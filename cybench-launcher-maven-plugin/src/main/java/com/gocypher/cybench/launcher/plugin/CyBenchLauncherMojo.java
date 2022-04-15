@@ -391,7 +391,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         }
     }
 
-    public void syncReportsMetadata(BenchmarkOverviewReport report, BenchmarkReport benchmarkReport, Map<String, String> PROJECT_METADATA_MAP) {
+    public void syncReportsMetadata(BenchmarkOverviewReport report, BenchmarkReport benchmarkReport,
+            Map<String, String> PROJECT_METADATA_MAP) {
         try {
             String projectVersion = PROJECT_METADATA_MAP.get(Constants.PROJECT_VERSION);
             String projectArtifactId = PROJECT_METADATA_MAP.get(Constants.PROJECT_NAME);
