@@ -233,7 +233,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 BenchmarkOverviewReport report = ReportingService.getInstance().createBenchmarkReport(results,
                         customBenchmarksMetadata);
-                //report.updateUploadStatus(reportUploadStatus);
 
                 report.getEnvironmentSettings().put("environment", hwProperties);
                 report.getEnvironmentSettings().put("jvmEnvironment", jvmProperties);
@@ -281,7 +280,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     report.addToBenchmarks(benchReport);
                 }
                 report.computeScores();
-                BenchmarkRunner.setReportUploadStatus(report);
+                report.updateUploadStatus(reportUploadStatus);
                 getLog().info(
                         "-----------------------------------------------------------------------------------------");
                 getLog().info("Report score - " + report.getTotalScore());
