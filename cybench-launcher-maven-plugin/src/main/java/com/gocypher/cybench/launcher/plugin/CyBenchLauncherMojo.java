@@ -342,8 +342,10 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().info("Removed all temporary auto-generated files!!!");
 
                 if (!response.isEmpty() && report.getUploadStatus().equals(Constants.REPORT_PRIVATE)) {
-                    getLog().error("*** Total Reports allowed in repository: " + response.get(Constants.REPORTS_ALLOWED_FROM_SUB));
-                    getLog().error("*** Total Reports already in repository: " + response.get(Constants.NUM_REPORTS_IN_REPO));
+                    getLog().error("*** Total Reports allowed in repository: "
+                            + response.get(Constants.REPORTS_ALLOWED_FROM_SUB));
+                    getLog().error(
+                            "*** Total Reports already in repository: " + response.get(Constants.NUM_REPORTS_IN_REPO));
                 }
 
                 if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
@@ -365,8 +367,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     if (BenchmarkRunner.getAllowedToUploadBasedOnSubscription(response)) {
                         // user was allowed to upload report, and there was still an error
                         getLog().info("You may submit your report '"
-                            + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
-                            + Constants.CYB_UPLOAD_URL);
+                                + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE)
+                                + "' manually at " + Constants.CYB_UPLOAD_URL);
                     }
                 }
             } catch (TooManyAnomaliesException e) {
