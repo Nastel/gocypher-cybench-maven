@@ -42,7 +42,6 @@ import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import com.gocypher.cybench.core.utils.IOUtils;
@@ -186,8 +185,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 getLog().info("Executing benchmarks...");
 
-                benchContext.setOptBuilder(new OptionsBuilder());
-
                 analyzeBenchmarkClasses(benchContext);
                 buildOptions(benchContext);
 
@@ -197,6 +194,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 BenchmarkOverviewReport report = processResults(benchContext, benchmarkSettings, results);
                 sendReport(benchContext, report);
+            } catch (TooManyAnomaliesException e) {
+                throw new MojoExecutionException("Too many anomalies found during benchmarks run: " + e.getMessage());
             } catch (Throwable t) {
                 getLog().error(t);
                 if (t.getMessage() != null && t.getMessage().contains("/META-INF/BenchmarkList")) {
@@ -236,10 +235,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     }
 
     public void buildOptions(BenchmarkingContext benchContext) {
-        OptionsBuilder optBuild = new OptionsBuilder();
         Options opt;
         if (useCyBenchBenchmarkSettings) {
-            ChainedOptionsBuilder chainedOptionsBuilder = optBuild.forks(forks)
+            ChainedOptionsBuilder chainedOptionsBuilder = benchContext.getOptBuilder().forks(forks)
                     .measurementTime(TimeValue.seconds(measurementTime)).measurementIterations(measurementIterations)
                     .warmupIterations(warmUpIterations).warmupTime(TimeValue.seconds(warmUpTime)).threads(threads)
                     .shouldDoGC(true).addProfiler(GCProfiler.class)
@@ -253,7 +251,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             }
             opt = chainedOptionsBuilder.build();
         } else {
-            opt = optBuild.shouldDoGC(true).addProfiler(GCProfiler.class)
+            opt = benchContext.getOptBuilder().shouldDoGC(true).addProfiler(GCProfiler.class)
                     // .addProfiler(HotspotThreadProfiler.class) //obsolete
                     // .addProfiler(HotspotRuntimeProfiler.class) //obsolete
                     .addProfiler(SafepointsProfiler.class).detectJvmArgs().build();
@@ -343,13 +341,16 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     }
 
     private void completeReport(BenchmarkingContext benchContext, BenchmarkOverviewReport report) throws Exception {
-        List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
-        report.getBenchmarks().remove("CUSTOM");
-        for (BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
-            report.addToBenchmarks(benchReport);
+        if (report.hasBenchmarks()) {
+            List<BenchmarkReport> customBenchmarksCategoryCheck = report.getBenchmarks().get("CUSTOM");
+            report.getBenchmarks().remove("CUSTOM");
+            for (BenchmarkReport benchReport : customBenchmarksCategoryCheck) {
+                report.addToBenchmarks(benchReport);
+            }
+            report.computeScores();
+            report.updateUploadStatus(reportUploadStatus);
         }
-        report.computeScores();
-        report.updateUploadStatus(reportUploadStatus);
+
         getLog().info("-----------------------------------------------------------------------------------------");
         getLog().info(" Report score - " + report.getTotalScore());
         getLog().info("-----------------------------------------------------------------------------------------");
@@ -365,92 +366,87 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
     @SuppressWarnings("unchecked")
     private void sendReport(BenchmarkingContext benchContext, BenchmarkOverviewReport report) throws Exception {
-        try {
-            completeReport(benchContext, report);
+        completeReport(benchContext, report);
 
-            String reportEncrypted = ReportingService.getInstance()
-                    .prepareReportForDelivery(benchContext.getSecurityBuilder(), report);
-            reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
-            String deviceReports = null;
-            String resultURL = null;
-            Map<?, ?> response = new HashMap<>();
-            if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
-                String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
+        String reportEncrypted = ReportingService.getInstance()
+                .prepareReportForDelivery(benchContext.getSecurityBuilder(), report);
+        reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
+        String deviceReports = null;
+        String resultURL = null;
+        Map<?, ?> response = new HashMap<>();
+        if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
+            String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
 
-                try (DeliveryService ds = DeliveryService.getInstance()) {
-                    String responseWithUrl = ds.sendReportForStoring(reportEncrypted, tokenAndEmail, benchQueryToken);
-                    if (StringUtils.isNotEmpty(responseWithUrl)) {
-                        response = JSONUtils.parseJsonIntoMap(responseWithUrl);
-                    }
-                    if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
-                        deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
-                        resultURL = String.valueOf(response.get(Constants.REPORT_URL));
-                        benchContext.getContextMetadata().put("reportSentSuccessfully", true);
-                        report.setDeviceReportsURL(deviceReports);
-                        report.setReportURL(resultURL);
-                    }
-                } catch (Exception exc) {
-                    getLog().error("Failed to send report over delivery service\n" + exc);
+            try (DeliveryService ds = DeliveryService.getInstance()) {
+                String responseWithUrl = ds.sendReportForStoring(reportEncrypted, tokenAndEmail, benchQueryToken);
+                if (StringUtils.isNotEmpty(responseWithUrl)) {
+                    response = JSONUtils.parseJsonIntoMap(responseWithUrl);
                 }
+                if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
+                    deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
+                    resultURL = String.valueOf(response.get(Constants.REPORT_URL));
+                    benchContext.getContextMetadata().put("reportSentSuccessfully", true);
+                    report.setDeviceReportsURL(deviceReports);
+                    report.setReportURL(resultURL);
+                }
+            } catch (Exception exc) {
+                getLog().error("Failed to send report over delivery service\n" + exc);
+            }
 
-            } else {
+        } else {
+            getLog().info("You may submit your report '"
+                    + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
+                    + Constants.CYB_UPLOAD_URL);
+        }
+
+        String reportJSON = JSONUtils.marshalToPrettyJson(report);
+        // getLog().info(reportJSON);
+        if (shouldStoreReportToFileSystem) {
+            String fileNameForReport;
+            String fileNameForReportEncrypted;
+            fileNameForReport = ComputationUtils.createFileNameForReport(reportName, benchContext.getStartTime(),
+                    report.getTotalScore(), false);
+            fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName,
+                    benchContext.getStartTime(), report.getTotalScore(), true);
+
+            getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport) + "'");
+            IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReport), reportJSON);
+            getLog().info("Saving encrypted test results to '"
+                    + IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted) + "'");
+            IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted),
+                    reportEncrypted);
+        }
+        getLog().info("Removing all temporary auto-generated files....");
+        IOUtils.removeTestDataFiles();
+        getLog().info("Removed all temporary auto-generated files!!!");
+
+        if (!response.isEmpty() && report.getUploadStatus().equals(Constants.REPORT_PRIVATE)) {
+            getLog().error("*** Total Reports allowed in repository: " + response.get(Constants.REPORTS_ALLOWED_FROM_SUB));
+            getLog().error("*** Total Reports in repository: " + response.get(Constants.NUM_REPORTS_IN_REPO));
+        }
+
+        if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
+            getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
+            getLog().info("You can find all device benchmarks on " + deviceReports);
+            getLog().info("Your report is available at " + resultURL);
+            getLog().info("NOTE: It may take a few minutes for your report to appear online");
+
+            if (response.containsKey("automatedComparisons")) {
+                List<Map<String, Object>> automatedComparisons = (List<Map<String, Object>>) response
+                        .get("automatedComparisons");
+                BenchmarkRunner.verifyAnomalies(automatedComparisons);
+            }
+        } else {
+            String errMsg = BenchmarkRunner.getErrorResponseMessage(response);
+            if (errMsg != null) {
+                getLog().error("CyBench backend service sent error response: " + errMsg);
+            }
+            if (BenchmarkRunner.getAllowedToUploadBasedOnSubscription(response)) {
+                // user was allowed to upload report, and there was still an error
                 getLog().info("You may submit your report '"
                         + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
                         + Constants.CYB_UPLOAD_URL);
             }
-
-            String reportJSON = JSONUtils.marshalToPrettyJson(report);
-            // getLog().info(reportJSON);
-            if (shouldStoreReportToFileSystem) {
-                String fileNameForReport;
-                String fileNameForReportEncrypted;
-                fileNameForReport = ComputationUtils.createFileNameForReport(reportName, benchContext.getStartTime(),
-                        report.getTotalScore(), false);
-                fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName,
-                        benchContext.getStartTime(), report.getTotalScore(), true);
-
-                getLog().info(
-                        "Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport) + "'");
-                IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReport), reportJSON);
-                getLog().info("Saving encrypted test results to '"
-                        + IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted) + "'");
-                IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted),
-                        reportEncrypted);
-            }
-            getLog().info("Removing all temporary auto-generated files....");
-            IOUtils.removeTestDataFiles();
-            getLog().info("Removed all temporary auto-generated files!!!");
-
-            if (!response.isEmpty() && report.getUploadStatus().equals(Constants.REPORT_PRIVATE)) {
-                getLog().error("*** Total Reports allowed in repository: " + response.get(Constants.REPORTS_ALLOWED_FROM_SUB));
-                getLog().error("*** Total Reports in repository: " + response.get(Constants.NUM_REPORTS_IN_REPO));
-            }
-
-            if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
-                getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
-                getLog().info("You can find all device benchmarks on " + deviceReports);
-                getLog().info("Your report is available at " + resultURL);
-                getLog().info("NOTE: It may take a few minutes for your report to appear online");
-
-                if (response.containsKey("automatedComparisons")) {
-                    List<Map<String, Object>> automatedComparisons = (List<Map<String, Object>>) response
-                            .get("automatedComparisons");
-                    BenchmarkRunner.verifyAnomalies(automatedComparisons);
-                }
-            } else {
-                String errMsg = BenchmarkRunner.getErrorResponseMessage(response);
-                if (errMsg != null) {
-                    getLog().error("CyBench backend service sent error response: " + errMsg);
-                }
-                if (BenchmarkRunner.getAllowedToUploadBasedOnSubscription(response)) {
-                    // user was allowed to upload report, and there was still an error
-                    getLog().info("You may submit your report '"
-                            + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
-                            + Constants.CYB_UPLOAD_URL);
-                }
-            }
-        } catch (TooManyAnomaliesException e) {
-            throw new MojoExecutionException("Too many anomalies found during benchmarks run: " + e.getMessage());
         }
     }
 
