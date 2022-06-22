@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -49,8 +50,6 @@ import com.gocypher.cybench.core.utils.JMHUtils;
 import com.gocypher.cybench.core.utils.JSONUtils;
 import com.gocypher.cybench.core.utils.SecurityUtils;
 import com.gocypher.cybench.launcher.BenchmarkRunner;
-import com.gocypher.cybench.launcher.environment.model.HardwareProperties;
-import com.gocypher.cybench.launcher.environment.model.JVMProperties;
 import com.gocypher.cybench.launcher.environment.services.CollectSystemInformation;
 import com.gocypher.cybench.launcher.model.BenchmarkOverviewReport;
 import com.gocypher.cybench.launcher.model.BenchmarkReport;
@@ -66,7 +65,6 @@ import com.gocypher.cybench.model.ComparisonConfig;
 
 @Mojo(name = "cybench", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.INTEGRATION_TEST)
 public class CyBenchLauncherMojo extends AbstractMojo {
-    boolean isReportSentSuccessFully = false;
     private static final String benchSource = "Maven plugin";
     @Parameter(property = "cybench.classpathScope", defaultValue = "runtime")
     protected String classpathScope;
@@ -145,8 +143,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             System.setProperty("collectHw", "true");
             long start = System.currentTimeMillis();
             getLog().info("-----------------------------------------------------------------------------------------");
-            getLog().info(
-                    "                                 Starting CyBench benchmarks (Maven Plugin)                             ");
+            getLog().info("                        Starting CyBench benchmarks (Maven Plugin)                       ");
             getLog().info("-----------------------------------------------------------------------------------------");
 
             ComparisonConfig automatedComparisonCfg;
@@ -158,13 +155,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 getLog().error("Failed to parse automated comparison configuration", e);
             }
 
+            BenchmarkingContext benchContext = new BenchmarkingContext();
+            benchContext.setStartTime(start);
+            benchContext.setBenchSource(benchSource);
+            benchContext.setAutomatedComparisonCfg(automatedComparisonCfg);
+
             try {
                 PluginUtils.resolveAndUpdateClasspath(getLog(), project, getPluginContext(), classpathScope);
-
-                BenchmarkingContext benchContext = new BenchmarkingContext();
-                benchContext.setStartTime(start);
-                benchContext.setBenchSource(benchSource);
-                benchContext.setAutomatedComparisonCfg(automatedComparisonCfg);
 
                 initContext(benchContext);
 
@@ -193,7 +190,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
                 analyzeBenchmarkClasses(benchContext);
                 buildOptions(benchContext);
-                
+
                 Collection<RunResult> results = runBenchmarks(benchContext);
 
                 getLog().info("Benchmark finished, executed tests count: " + results.size());
@@ -218,7 +215,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                         "-----------------------------------------------------------------------------------------");
             }
 
-            if (!isReportSentSuccessFully && shouldSendReportToCyBench && shouldFailBuildOnReportDeliveryFailure) {
+            Boolean reportSentSuccessfully = (Boolean) benchContext.getContextMetadata("reportSentSuccessfully");
+            if (!BooleanUtils.toBoolean(reportSentSuccessfully) && shouldSendReportToCyBench
+                    && shouldFailBuildOnReportDeliveryFailure) {
                 throw new MojoExecutionException(
                         "Error during benchmarks run, report was not sent to CyBench as configured!");
             }
@@ -241,10 +240,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         Options opt;
         if (useCyBenchBenchmarkSettings) {
             ChainedOptionsBuilder chainedOptionsBuilder = optBuild.forks(forks)
-                    .measurementTime(TimeValue.seconds(measurementTime))
-                    .measurementIterations(measurementIterations).warmupIterations(warmUpIterations)
-                    .warmupTime(TimeValue.seconds(warmUpTime)).threads(threads).shouldDoGC(true)
-                    .addProfiler(GCProfiler.class)
+                    .measurementTime(TimeValue.seconds(measurementTime)).measurementIterations(measurementIterations)
+                    .warmupIterations(warmUpIterations).warmupTime(TimeValue.seconds(warmUpTime)).threads(threads)
+                    .shouldDoGC(true).addProfiler(GCProfiler.class)
                     // .addProfiler(HotspotThreadProfiler.class) //obsolete
                     // .addProfiler(HotspotRuntimeProfiler.class) //obsolete
                     .addProfiler(SafepointsProfiler.class);
@@ -272,8 +270,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 Class<?> classObj = Class.forName(benchmarkClass);
                 SecurityUtils.generateMethodFingerprints(classObj, benchContext.getManualFingerprints(),
                         benchContext.getClassFingerprints());
-                SecurityUtils.computeClassHashForMethods(classObj, benchContext.getGeneratedFingerprints(),
-                        benchContext.getManualFingerprints());
+                SecurityUtils.computeClassHashForMethods(classObj, benchContext.getGeneratedFingerprints());
             } catch (ClassNotFoundException exc) {
                 getLog().error("Class not found in the classpath for execution", exc);
             }
@@ -287,11 +284,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         return results;
     }
 
-    public BenchmarkOverviewReport processResults(BenchmarkingContext benchContext, Map<String, Object> benchmarkSettings, Collection<RunResult> results) {
+    public BenchmarkOverviewReport processResults(BenchmarkingContext benchContext,
+            Map<String, Object> benchmarkSettings, Collection<RunResult> results) {
         BenchmarkOverviewReport report;
         List<BenchmarkReport> benchReports;
         if (benchContext.getReport() == null) {
-            report = ReportingService.getInstance().createBenchmarkReport(results, benchContext.getDefaultBenchmarksMetadata());
+            report = ReportingService.getInstance().createBenchmarkReport(results,
+                    benchContext.getDefaultBenchmarksMetadata());
             benchContext.setReport(report);
             benchReports = report.getBenchmarksList();
 
@@ -305,7 +304,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             ComparisonConfig automatedComparisonCfg = benchContext.getAutomatedComparisonCfg();
             if (automatedComparisonCfg != null) {
                 if (automatedComparisonCfg.getScope().equals(ComparisonConfig.Scope.WITHIN)) {
-                    automatedComparisonCfg.setCompareVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
+                    automatedComparisonCfg
+                            .setCompareVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
                 }
                 automatedComparisonCfg.setRange(String.valueOf(automatedComparisonCfg.getCompareLatestReports()));
                 automatedComparisonCfg.setProjectName(benchContext.getProjectMetadata(Constants.PROJECT_NAME));
@@ -314,7 +314,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             }
         } else {
             report = benchContext.getReport();
-            benchReports = ReportingService.getInstance().updateBenchmarkReport(report, results, 
+            benchReports = ReportingService.getInstance().updateBenchmarkReport(report, results,
                     benchContext.getDefaultBenchmarksMetadata());
         }
         report.setBenchmarkSettings(benchmarkSettings);
@@ -338,7 +338,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 e.printStackTrace();
             }
         }
-        
+
         return report;
     }
 
@@ -350,34 +350,33 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         }
         report.computeScores();
         report.updateUploadStatus(reportUploadStatus);
-        getLog().info(
-                "-----------------------------------------------------------------------------------------");
-        getLog().info("Report score - " + report.getTotalScore());
-        getLog().info(
-                "-----------------------------------------------------------------------------------------");
+        getLog().info("-----------------------------------------------------------------------------------------");
+        getLog().info(" Report score - " + report.getTotalScore());
+        getLog().info("-----------------------------------------------------------------------------------------");
 
         if (expectedScore > 0 && report.getTotalScore().doubleValue() < expectedScore) {
-            throw new MojoFailureException("CyBench score is less than expected:"
-                    + report.getTotalScore().doubleValue() + " < " + expectedScore);
+            throw new MojoFailureException("CyBench score is less than expected:" + report.getTotalScore().doubleValue()
+                    + " < " + expectedScore);
         }
 
         report.setTimestamp(System.currentTimeMillis());
         report.setTimestampUTC(ZonedDateTime.now(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
 
+    @SuppressWarnings("unchecked")
     private void sendReport(BenchmarkingContext benchContext, BenchmarkOverviewReport report) throws Exception {
         try {
             completeReport(benchContext, report);
 
-            String reportEncrypted = ReportingService.getInstance().prepareReportForDelivery(benchContext.getSecurityBuilder(),
-                    report);
+            String reportEncrypted = ReportingService.getInstance()
+                    .prepareReportForDelivery(benchContext.getSecurityBuilder(), report);
             reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
             String deviceReports = null;
             String resultURL = null;
             Map<?, ?> response = new HashMap<>();
             if (report.isEligibleForStoringExternally() && shouldSendReportToCyBench) {
                 String tokenAndEmail = ComputationUtils.getRequestHeader(benchAccessToken, email);
-                
+
                 try (DeliveryService ds = DeliveryService.getInstance()) {
                     String responseWithUrl = ds.sendReportForStoring(reportEncrypted, tokenAndEmail, benchQueryToken);
                     if (StringUtils.isNotEmpty(responseWithUrl)) {
@@ -386,20 +385,20 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
                         deviceReports = String.valueOf(response.get(Constants.REPORT_USER_URL));
                         resultURL = String.valueOf(response.get(Constants.REPORT_URL));
-                        isReportSentSuccessFully = true;
+                        benchContext.getContextMetadata().put("reportSentSuccessfully", true);
                         report.setDeviceReportsURL(deviceReports);
                         report.setReportURL(resultURL);
                     }
                 } catch (Exception exc) {
                     getLog().error("Failed to send report over delivery service\n" + exc);
                 }
-                
+
             } else {
                 getLog().info("You may submit your report '"
                         + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
                         + Constants.CYB_UPLOAD_URL);
             }
-    
+
             String reportJSON = JSONUtils.marshalToPrettyJson(report);
             // getLog().info(reportJSON);
             if (shouldStoreReportToFileSystem) {
@@ -407,11 +406,11 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 String fileNameForReportEncrypted;
                 fileNameForReport = ComputationUtils.createFileNameForReport(reportName, benchContext.getStartTime(),
                         report.getTotalScore(), false);
-                fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName, benchContext.getStartTime(),
-                        report.getTotalScore(), true);
-    
-                getLog().info("Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport)
-                        + "'");
+                fileNameForReportEncrypted = ComputationUtils.createFileNameForReport(reportName,
+                        benchContext.getStartTime(), report.getTotalScore(), true);
+
+                getLog().info(
+                        "Saving test results to '" + IOUtils.getReportsPath(reportsFolder, fileNameForReport) + "'");
                 IOUtils.storeResultsToFile(IOUtils.getReportsPath(reportsFolder, fileNameForReport), reportJSON);
                 getLog().info("Saving encrypted test results to '"
                         + IOUtils.getReportsPath(reportsFolder, fileNameForReportEncrypted) + "'");
@@ -421,18 +420,18 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             getLog().info("Removing all temporary auto-generated files....");
             IOUtils.removeTestDataFiles();
             getLog().info("Removed all temporary auto-generated files!!!");
-    
+
             if (!response.isEmpty() && report.getUploadStatus().equals(Constants.REPORT_PRIVATE)) {
                 getLog().error("*** Total Reports allowed in repository: " + response.get(Constants.REPORTS_ALLOWED_FROM_SUB));
                 getLog().error("*** Total Reports in repository: " + response.get(Constants.NUM_REPORTS_IN_REPO));
             }
-    
+
             if (!response.isEmpty() && !BenchmarkRunner.isErrorResponse(response)) {
                 getLog().info("Benchmark report submitted successfully to " + Constants.REPORT_URL);
                 getLog().info("You can find all device benchmarks on " + deviceReports);
                 getLog().info("Your report is available at " + resultURL);
                 getLog().info("NOTE: It may take a few minutes for your report to appear online");
-    
+
                 if (response.containsKey("automatedComparisons")) {
                     List<Map<String, Object>> automatedComparisons = (List<Map<String, Object>>) response
                             .get("automatedComparisons");
@@ -446,16 +445,17 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 if (BenchmarkRunner.getAllowedToUploadBasedOnSubscription(response)) {
                     // user was allowed to upload report, and there was still an error
                     getLog().info("You may submit your report '"
-                        + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
-                        + Constants.CYB_UPLOAD_URL);
+                            + IOUtils.getReportsPath(reportsFolder, Constants.CYB_REPORT_CYB_FILE) + "' manually at "
+                            + Constants.CYB_UPLOAD_URL);
                 }
             }
         } catch (TooManyAnomaliesException e) {
             throw new MojoExecutionException("Too many anomalies found during benchmarks run: " + e.getMessage());
-        } 
+        }
     }
 
-    public void syncReportsMetadata(BenchmarkingContext benchContext, BenchmarkOverviewReport report, BenchmarkReport benchmarkReport) {
+    public void syncReportsMetadata(BenchmarkingContext benchContext, BenchmarkOverviewReport report,
+            BenchmarkReport benchmarkReport) {
         try {
             String projectVersion = benchContext.getProjectMetadata(Constants.PROJECT_VERSION);
             String projectArtifactId = benchContext.getProjectMetadata(Constants.PROJECT_NAME);
