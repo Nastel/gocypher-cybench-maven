@@ -482,9 +482,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                     String sessionId = bMetadata.get("benchSession");
                     if (StringUtils.isNotEmpty(sessionId)) {
                         report.setBenchmarkSessionId(sessionId);
-                    }
-                }
-            }
+                    } else {
+						report.setBenchmarkSessionId(UUID.randomUUID().toString());
+					}
+				} else {
+					report.setBenchmarkSessionId(UUID.randomUUID().toString());
+				}
+			}
 
             if (benchmarkReport.getCategory().equals("CUSTOM")) {
                 int classIndex = benchmarkReport.getName().lastIndexOf(".");
