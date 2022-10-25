@@ -126,7 +126,7 @@ benchmark report.
         <automationCompareVersion>2.0</automationCompareVersion>
         <automationNumLatestReports>1</automationNumLatestReports>
         <automationAnomaliesAllowed>1</automationAnomaliesAllowed>
-        <automationMethod>DETLA</automationMethod>
+        <automationMethod>DELTA</automationMethod>
         <automationThreshold>PERCENT_CHANGE</automationThreshold>
         <automationPercentChangeAllowed>10</automationPercentChangeAllowed>
     </configuration>
