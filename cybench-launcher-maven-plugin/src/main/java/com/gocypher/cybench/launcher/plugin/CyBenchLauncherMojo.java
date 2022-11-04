@@ -57,6 +57,7 @@ import com.gocypher.cybench.launcher.model.TooManyAnomaliesException;
 import com.gocypher.cybench.launcher.plugin.utils.PluginUtils;
 import com.gocypher.cybench.launcher.report.DeliveryService;
 import com.gocypher.cybench.launcher.report.ReportingService;
+import com.gocypher.cybench.launcher.services.ConfigurationHandler;
 import com.gocypher.cybench.launcher.utils.ComputationUtils;
 import com.gocypher.cybench.launcher.utils.Constants;
 import com.gocypher.cybench.launcher.utils.SecurityBuilder;
@@ -135,6 +136,9 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     @Parameter(property = "cybench.automationDeviationsAllowed", defaultValue = "-1")
     private double automationDeviationsAllowed;
 
+    
+    static boolean validConfigFile;
+    
     @Override
     @SuppressWarnings("unchecked")
     public void execute() throws MojoExecutionException {
@@ -163,22 +167,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 PluginUtils.resolveAndUpdateClasspath(getLog(), project, getPluginContext(), classpathScope);
 
                 initContext(benchContext);
+                Map<String, Object> benchmarkSettings = setConfiguration(benchContext);
 
-                Map<String, Object> benchmarkSettings = new HashMap<>();
-
-                benchmarkSettings.put("benchSource", benchSource);
-                benchmarkSettings.put("benchWarmUpIteration", warmUpIterations);
-                benchmarkSettings.put("benchWarmUpSeconds", warmUpTime);
-                benchmarkSettings.put("benchMeasurementIteration", measurementIterations);
-                benchmarkSettings.put("benchMeasurementSeconds", measurementTime);
-                benchmarkSettings.put("benchForkCount", forks);
-                benchmarkSettings.put("benchThreadCount", threads);
 
                 if (StringUtils.isEmpty(reportName)) {
                     reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(),
                             project.getArtifactId(), project.getVersion());
                 }
-                benchmarkSettings.put("benchReportName", reportName);
 
                 benchContext.getProjectMetadata().put(Constants.PROJECT_NAME, project.getArtifactId());
                 benchContext.getProjectMetadata().put(Constants.PROJECT_VERSION, project.getVersion());
@@ -224,39 +219,76 @@ public class CyBenchLauncherMojo extends AbstractMojo {
             getLog().info("Skipping CyBench execution");
         }
     }
+    
+    public Map<String, Object> setConfiguration(BenchmarkingContext benchContext) {
+    	Map<String, Object> benchmarkSettings = new HashMap<String, Object>();
+    	if (validConfigFile) {
+          benchmarkSettings.put("benchSource", benchSource);
+          benchmarkSettings.put("benchWarmUpIteration", warmUpIterations);
+          benchmarkSettings.put("benchWarmUpSeconds", warmUpTime);
+          benchmarkSettings.put("benchMeasurementIteration", measurementIterations);
+          benchmarkSettings.put("benchMeasurementSeconds", measurementTime);
+          benchmarkSettings.put("benchForkCount", forks);
+          benchmarkSettings.put("benchThreadCount", threads);
+          
+          benchmarkSettings.put("benchReportName", benchContext.getConfiguration().get("reportName"));
+    	}
+    	
+    	return benchmarkSettings;
+    	
+    }
 
-    public void initContext(BenchmarkingContext benchContext) {
+    public void initContext(BenchmarkingContext benchContext) {    	
         getLog().info("Collecting hardware, software information...");
         benchContext.setHWProperties(CollectSystemInformation.getEnvironmentProperties());
         getLog().info("Collecting JVM properties...");
         benchContext.setJVMProperties(CollectSystemInformation.getJavaVirtualMachineProperties());
 
         benchContext.setDefaultBenchmarksMetadata(ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata));
+        
+        Properties tempProps = ConfigurationHandler.loadConfiguration("/config/", Constants.LAUNCHER_CONFIGURATION);
+        getLog().info("tempProps: " + tempProps.toString());
+        if (!tempProps.isEmpty()) { // can add config validation here.
+            benchContext.setConfiguration(tempProps);
+            validConfigFile = true;
+            reportName = benchContext.getConfiguration().getProperty("reportName");
+            getLog().info("Overriding configuration based on file.");
+        }
+
     }
 
     public void buildOptions(BenchmarkingContext benchContext) {
         Options opt;
-        if (useCyBenchBenchmarkSettings) {
-            ChainedOptionsBuilder chainedOptionsBuilder = benchContext.getOptBuilder().forks(forks)
-                    .measurementTime(TimeValue.seconds(measurementTime)).measurementIterations(measurementIterations)
-                    .warmupIterations(warmUpIterations).warmupTime(TimeValue.seconds(warmUpTime)).threads(threads)
-                    .shouldDoGC(true).addProfiler(GCProfiler.class)
-                    // .addProfiler(HotspotThreadProfiler.class) //obsolete
-                    // .addProfiler(HotspotRuntimeProfiler.class) //obsolete
-                    .addProfiler(SafepointsProfiler.class);
-            if (jmvArgs.length() > 0) {
-                chainedOptionsBuilder.jvmArgs(jmvArgs);
-            } else {
-                chainedOptionsBuilder.detectJvmArgs();
-            }
-            opt = chainedOptionsBuilder.build();
+        if (validConfigFile) {
+        	try {
+        		getLog().info("Building options via config file..");
+				BenchmarkRunner.buildOptions(benchContext);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+        } else if (useCyBenchBenchmarkSettings && !validConfigFile) {
+	        ChainedOptionsBuilder chainedOptionsBuilder = benchContext.getOptBuilder().forks(forks)
+	                .measurementTime(TimeValue.seconds(measurementTime)).measurementIterations(measurementIterations)
+	                .warmupIterations(warmUpIterations).warmupTime(TimeValue.seconds(warmUpTime)).threads(threads)
+	                .shouldDoGC(true).addProfiler(GCProfiler.class)
+	                // .addProfiler(HotspotThreadProfiler.class) //obsolete
+	                // .addProfiler(HotspotRuntimeProfiler.class) //obsolete
+	                .addProfiler(SafepointsProfiler.class);
+	        if (jmvArgs.length() > 0) {
+	            chainedOptionsBuilder.jvmArgs(jmvArgs);
+	        } else {
+	            chainedOptionsBuilder.detectJvmArgs();
+	        }
+	        opt = chainedOptionsBuilder.build();
+	        benchContext.setOptions(opt);
+
         } else {
             opt = benchContext.getOptBuilder().shouldDoGC(true).addProfiler(GCProfiler.class)
                     // .addProfiler(HotspotThreadProfiler.class) //obsolete
                     // .addProfiler(HotspotRuntimeProfiler.class) //obsolete
                     .addProfiler(SafepointsProfiler.class).detectJvmArgs().build();
+            benchContext.setOptions(opt);
         }
-        benchContext.setOptions(opt);
     }
 
     public void analyzeBenchmarkClasses(BenchmarkingContext benchContext) {
@@ -309,6 +341,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
                 automatedComparisonCfg.setProjectName(benchContext.getProjectMetadata(Constants.PROJECT_NAME));
                 automatedComparisonCfg.setProjectVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
                 report.setAutomatedComparisonConfig(automatedComparisonCfg);
+                getLog().info("Set auto comparison.");
             }
         } else {
             report = benchContext.getReport();
@@ -511,6 +544,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
     public ComparisonConfig checkConfigValidity() throws Exception {
         ComparisonConfig verifiedComparisonConfig = new ComparisonConfig();
 
+        getLog().info("Verifying config validity.");
         String SCOPE_STR = automationScope;
         if (StringUtils.isBlank(SCOPE_STR)) {
             throw new Exception("Scope is not specified!");
@@ -522,6 +556,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
         Integer NUM_LATEST_REPORTS = automationNumLatestReports;
         Integer ANOMALIES_ALLOWED = automationAnomaliesAllowed;
         String METHOD_STR = automationMethod;
+        getLog().info("Found method as: " + METHOD_STR);
         if (StringUtils.isBlank(METHOD_STR)) {
             throw new Exception("Method is not specified!");
         } else {
