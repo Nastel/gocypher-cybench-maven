@@ -296,7 +296,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 
 		}
 		if (checkExistsAndNotNull(props, "benchQueryToken")) {
-			benchQueryToken = props.getProperty("benchAccessToken");
+			benchQueryToken = props.getProperty("benchQueryToken");
 		}
 		if (checkExistsAndNotNull(props, "emailAddress")) {
 			email = props.getProperty("emailAddress");
