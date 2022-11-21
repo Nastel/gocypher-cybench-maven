@@ -150,19 +150,11 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 			getLog().info("                        Starting CyBench benchmarks (Maven Plugin)                       ");
 			getLog().info("-----------------------------------------------------------------------------------------");
 
-			ComparisonConfig automatedComparisonCfg;
-			try {
-				automatedComparisonCfg = checkConfigValidity();
-				getLog().info("** Configuration loaded: automated comparison configuration");
-			} catch (Exception e) {
-				automatedComparisonCfg = null;
-				getLog().error("Failed to parse automated comparison configuration", e);
-			}
+
 
 			BenchmarkingContext benchContext = new BenchmarkingContext();
 			benchContext.setStartTime(start);
 			benchContext.setBenchSource(benchSource);
-			benchContext.setAutomatedComparisonCfg(automatedComparisonCfg);
 
 			try {
 				PluginUtils.resolveAndUpdateClasspath(getLog(), project, getPluginContext(), classpathScope);
@@ -173,7 +165,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 					reportName = MessageFormat.format("Benchmark for {0}:{1}:{2}", project.getGroupId(),
 							project.getArtifactId(), project.getVersion());
 				}
-
+				
 				benchContext.getProjectMetadata().put(Constants.PROJECT_NAME, project.getArtifactId());
 				benchContext.getProjectMetadata().put(Constants.PROJECT_VERSION, project.getVersion());
 
@@ -235,7 +227,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 		benchmarkSettings.put("benchReportName", reportName);
 
 		return benchmarkSettings;
-
 	}
 
 	public void initContext(BenchmarkingContext benchContext) {
@@ -247,12 +238,33 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 		benchContext.setDefaultBenchmarksMetadata(ComputationUtils.parseBenchmarkMetadata(customBenchmarkMetadata));
 
 		Properties tempProps = ConfigurationHandler.loadConfiguration("/config/", Constants.LAUNCHER_CONFIGURATION);
-		getLog().info("tempProps: " + tempProps.toString());
-		if (!tempProps.isEmpty()) { // can add config validation here.
+		Properties automationProps = ConfigurationHandler.loadConfiguration("/config/", Constants.AUTOMATED_COMPARISON_CONFIGURATION);
+		if (!tempProps.isEmpty()) {
 			overrideConfiguration(tempProps);
 			benchContext.setConfiguration(tempProps);
 			validConfigFile = true;
-			getLog().info("Overriding configuration based on file.");
+			getLog().info("Overriding launcher configuration based on config file (cybench-launcher.properties).");
+		}
+		if (!automationProps.isEmpty()) {
+			overrideAutomatedConfiguration(automationProps);
+			try {
+				benchContext.setAutomatedComparisonCfg(checkConfigValidity());
+				getLog().info("Set automated comparison via config file (cybench-automation.properties).");
+			} catch (Exception e) {
+				getLog().error("Error setting automated comparison via config file. Resulting to default values.");
+				e.printStackTrace();
+			}
+			
+		} else {
+			ComparisonConfig automatedComparisonCfg;
+			try {
+				automatedComparisonCfg = checkConfigValidity();
+				getLog().info("Set automated comparison configuration via pom.xml.");
+			} catch (Exception e) {
+				automatedComparisonCfg = null;
+				getLog().error("Failed to parse automated comparison configuration.", e);
+			}
+			benchContext.setAutomatedComparisonCfg(automatedComparisonCfg);
 		}
 
 	}
@@ -383,26 +395,13 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 					CollectSystemInformation.getUnclassifiedProperties());
 			report.getEnvironmentSettings().put("userDefinedProperties",
 					ComputationUtils.customUserDefinedProperties(userProperties));
-
-			ComparisonConfig automatedComparisonCfg = benchContext.getAutomatedComparisonCfg();
-			if (automatedComparisonCfg != null) {
-				if (automatedComparisonCfg.getScope().equals(ComparisonConfig.Scope.WITHIN)) {
-					automatedComparisonCfg
-							.setCompareVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
-				}
-				automatedComparisonCfg.setRange(String.valueOf(automatedComparisonCfg.getCompareLatestReports()));
-				automatedComparisonCfg.setProjectName(benchContext.getProjectMetadata(Constants.PROJECT_NAME));
-				automatedComparisonCfg.setProjectVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
-				report.setAutomatedComparisonConfig(automatedComparisonCfg);
-				getLog().info("Set auto comparison.");
-			}
 		} else {
 			report = benchContext.getReport();
 			benchReports = ReportingService.getInstance().updateBenchmarkReport(report, results,
 					benchContext.getDefaultBenchmarksMetadata());
 		}
 		report.setBenchmarkSettings(benchmarkSettings);
-
+		
 		for (BenchmarkReport benchmarkReport : benchReports) {
 			String name = benchmarkReport.getName();
 			benchmarkReport.setClassFingerprint(benchContext.getClassFingerprints().get(name));
@@ -421,6 +420,18 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
+		}
+		
+		ComparisonConfig automatedComparisonCfg = benchContext.getAutomatedComparisonCfg();
+		if (automatedComparisonCfg != null) {
+			if (automatedComparisonCfg.getScope().equals(ComparisonConfig.Scope.WITHIN)) {
+				automatedComparisonCfg
+						.setCompareVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
+			}
+			automatedComparisonCfg.setRange(String.valueOf(automatedComparisonCfg.getCompareLatestReports()));
+			automatedComparisonCfg.setProjectName(report.getProject());
+			automatedComparisonCfg.setProjectVersion(benchContext.getProjectMetadata(Constants.PROJECT_VERSION));
+			report.setAutomatedComparisonConfig(automatedComparisonCfg);
 		}
 
 		return report;
@@ -453,7 +464,7 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private void sendReport(BenchmarkingContext benchContext, BenchmarkOverviewReport report) throws Exception {
 		completeReport(benchContext, report);
-
+		
 		String reportEncrypted = ReportingService.getInstance()
 				.prepareReportForDelivery(benchContext.getSecurityBuilder(), report);
 		reportsFolder = PluginUtils.checkReportSaveLocation(reportsFolder);
@@ -486,7 +497,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 		}
 
 		String reportJSON = JSONUtils.marshalToPrettyJson(report);
-		// getLog().info(reportJSON);
 		if (shouldStoreReportToFileSystem) {
 			String fileNameForReport;
 			String fileNameForReportEncrypted;
@@ -542,7 +552,8 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 		try {
 			String projectVersion = benchContext.getProjectMetadata(Constants.PROJECT_VERSION);
 			String projectArtifactId = benchContext.getProjectMetadata(Constants.PROJECT_NAME);
-
+			
+			
 			if (StringUtils.isNotEmpty(benchmarkReport.getProject())) {
 				report.setProject(benchmarkReport.getProject());
 			} else {
@@ -594,11 +605,38 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 			getLog().error("Error while attempting to synchronize benchmark metadata from runner: ", e);
 		}
 	}
+	
+	private void overrideAutomatedConfiguration(Properties props) {
+		getLog().error("AUTO PROPS: " + props);
+		if (checkExistsAndNotNull(props, "scope")) {
+			automationScope = (String) props.getProperty("scope");
+		}
+		if (checkExistsAndNotNull(props, "compareVersion")) {
+			automationCompareVersion = (String) props.getProperty("compareVersion");
+		}
+		if (checkExistsAndNotNull(props, "numLatestReports")) {
+			automationNumLatestReports = Integer.parseInt(props.getProperty("numLatestReports"));
+		}
+		if (checkExistsAndNotNull(props, "anomaliesAllowed")) {
+			automationAnomaliesAllowed = Integer.parseInt(props.getProperty("anomaliesAllowed"));
+		}
+		if (checkExistsAndNotNull(props, "method")) {
+			automationMethod = (String) props.getProperty("method"); //do conditionals for threshold?
+		}
+		if (checkExistsAndNotNull(props, "threshold")) {
+			automationThreshold = (String) props.getProperty("threshold");
+		}
+		if (checkExistsAndNotNull(props, "percentChangeAllowed")) {
+			automationPercentChangeAllowed = Double.parseDouble(props.getProperty("percentChangeAllowed"));
+		}
+		if (checkExistsAndNotNull(props, "deviationsAllowed")) {
+			automationDeviationsAllowed = Double.parseDouble(props.getProperty("deviationsAllowed"));
+		}
+	}
 
+	
 	public ComparisonConfig checkConfigValidity() throws Exception {
 		ComparisonConfig verifiedComparisonConfig = new ComparisonConfig();
-
-		getLog().info("Verifying config validity.");
 		String SCOPE_STR = automationScope;
 		if (StringUtils.isBlank(SCOPE_STR)) {
 			throw new Exception("Scope is not specified!");
@@ -610,7 +648,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 		Integer NUM_LATEST_REPORTS = automationNumLatestReports;
 		Integer ANOMALIES_ALLOWED = automationAnomaliesAllowed;
 		String METHOD_STR = automationMethod;
-		getLog().info("Found method as: " + METHOD_STR);
 		if (StringUtils.isBlank(METHOD_STR)) {
 			throw new Exception("Method is not specified!");
 		} else {
@@ -696,7 +733,6 @@ public class CyBenchLauncherMojo extends AbstractMojo {
 				}
 			}
 		}
-
 		return verifiedComparisonConfig;
 	}
 
